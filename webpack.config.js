@@ -58,8 +58,8 @@ module.exports = (env, argv) => {
     plugins: [
       new CopyPlugin({
         patterns: [
-          { from: `node_modules/tinode-sdk/umd/tinode.${mode}.js`, to: `tinode.${mode}.js` },
-          { from: `node_modules/tinode-sdk/umd/tinode.${mode}.js.map`, to: `tinode.${mode}.js.map` },
+          { from: `src/tinode-sdk/tinode.${mode}.js`, to: `tinode.${mode}.js` },
+          { from: `src/tinode-sdk/tinode.${mode}.js.map`, to: `tinode.${mode}.js.map` },
         ],
       }),
     ],

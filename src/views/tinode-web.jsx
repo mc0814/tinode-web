@@ -149,6 +149,7 @@ class TinodeWeb extends React.Component {
     this.handleTagsUpdateRequest = this.handleTagsUpdateRequest.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
     this.handleDeleteAccount = this.handleDeleteAccount.bind(this);
+    this.handleSoftDeleteAllMessage = this.handleSoftDeleteAllMessage.bind(this);
     this.handleDeleteTopicRequest = this.handleDeleteTopicRequest.bind(this);
     this.handleDeleteMessagesRequest = this.handleDeleteMessagesRequest.bind(this);
     this.handleLeaveUnsubRequest = this.handleLeaveUnsubRequest.bind(this);
@@ -383,13 +384,13 @@ class TinodeWeb extends React.Component {
     const {formatMessage, locale} = this.props.intl;
     const onError = (msg, err) => {
       console.error(msg, err);
-      this.handleError(formatMessage(messages.push_init_failed), 'err');
+      // this.handleError(formatMessage(messages.push_init_failed), 'err');
       this.setState({firebaseToken: null});
       LocalStorageUtil.updateObject('settings', {desktopAlerts: false});
     }
 
     try {
-      this.fcm = firebaseGetMessaging(firebaseInitApp(FIREBASE_INIT, APP_NAME));
+      // this.fcm = firebaseGetMessaging(firebaseInitApp(FIREBASE_INIT, APP_NAME));
       return navigator.serviceWorker.getRegistration('/service-worker.js').then(reg => {
         return reg || navigator.serviceWorker.register('/service-worker.js').then(reg => {
           this.checkForAppUpdate(reg);
@@ -399,24 +400,24 @@ class TinodeWeb extends React.Component {
         // Pass locale and version config to the service worker.
         (reg.active || reg.installing).postMessage(JSON.stringify({locale: locale, version: PACKAGE_VERSION}));
         // Request token.
-        return TinodeWeb.requestFCMToken(this.fcm, reg);
+        // return TinodeWeb.requestFCMToken(this.fcm, reg);
       }).then(token => {
-        const persist = LocalStorageUtil.getObject('keep-logged-in');
-        if (token != this.state.firebaseToken) {
-          this.tinode.setDeviceToken(token);
-          if (persist) {
-            LocalStorageUtil.setObject('firebase-token', token);
-          }
-        }
-        this.setState({firebaseToken: token, desktopAlerts: true});
-        if (persist) {
-          LocalStorageUtil.updateObject('settings', {desktopAlerts: true});
-        }
+        // const persist = LocalStorageUtil.getObject('keep-logged-in');
+        // if (token != this.state.firebaseToken) {
+        //   this.tinode.setDeviceToken(token);
+        //   if (persist) {
+        //     LocalStorageUtil.setObject('firebase-token', token);
+        //   }
+        // }
+        // this.setState({firebaseToken: token, desktopAlerts: true});
+        // if (persist) {
+        //   LocalStorageUtil.updateObject('settings', {desktopAlerts: true});
+        // }
 
         // Handhe FCM pushes
         // (a) for channels always,
         // (b) pushes when the app is in foreground but has no focus.
-        firebaseOnMessage(this.fcm, payload => { this.handlePushMessage(payload); });
+        // firebaseOnMessage(this.fcm, payload => { this.handlePushMessage(payload); });
       }).catch(err => {
         // SW registration or FCM has failed :(
         onError(err);
@@ -887,6 +888,8 @@ class TinodeWeb extends React.Component {
       }
     } else if (what == 'del') {
       // TODO: messages deleted (hard or soft) -- update pill counter.
+      console.log('me del', cont);
+      this.resetContactList();
     } else if (what == 'upd' || what == 'call') {
       // upd, call - handled by the SDK. Explicitly ignoring here.
     } else {
@@ -955,7 +958,7 @@ class TinodeWeb extends React.Component {
     newState.chatList.sort((a, b) => {
       return (a.touched || past).getTime() - (b.touched || past).getTime();
     });
-
+    console.log(newState.chatList);
     // Merge search results and chat list.
     newState.searchableContacts = TinodeWeb.prepareSearchableContacts(newState.chatList, this.state.searchResults);
     this.setState(newState);
@@ -975,6 +978,7 @@ class TinodeWeb extends React.Component {
   }
 
   tnFndSubsUpdated() {
+    console.log(123123, '这里触发噢噢噢噢');
     const foundContacts = [];
     // Don't attempt to create P2P topics which already exist. Server will reject the duplicates.
     this.tinode.getFndTopic().contacts((s) => {
@@ -1482,6 +1486,14 @@ class TinodeWeb extends React.Component {
   handleDeleteAccount() {
     this.tinode.delCurrentUser(true).then(_ => {
       this.handleLogout();
+    });
+  }
+
+  handleSoftDeleteAllMessage() {
+    this.tinode.softDelAllMessages().then(_ => {
+      // this.handleLogout();
+      // console.log('已经清楚全部消息');
+      this.resetContactList();
     });
   }
 
@@ -2056,6 +2068,7 @@ class TinodeWeb extends React.Component {
             onCreateTopic={this.handleStartTopicRequest}
             onLogout={this.handleLogout}
             onDeleteAccount={this.handleDeleteAccount}
+            onSoftDeleteAllMessage={this.handleSoftDeleteAllMessage}
             onShowAlert={this.handleShowAlert}
             onCancel={this.handleSidepanelCancel}
             onError={this.handleError}
@@ -2119,6 +2132,7 @@ class TinodeWeb extends React.Component {
             onChangePermissions={this.handleChangePermissions}
             onNewChat={this.handleNewChatInvitation}
             sendMessage={this.handleSendMessage}
+            onResetContactList={this.resetContactList}
             onVideoCallClosed={this.handleCallClose} />
           : null}
 

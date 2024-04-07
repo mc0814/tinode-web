@@ -217,6 +217,7 @@ class SidepanelView extends React.PureComponent {
             onUpdatePassword={this.props.onUpdatePassword}
             onLogout={this.props.onLogout}
             onDeleteAccount={this.props.onDeleteAccount}
+            onSoftDeleteAllMessage={this.props.onSoftDeleteAllMessage}
             onShowAlert={this.props.onShowAlert}
             onShowBlocked={this.props.onShowBlocked} /> :
 

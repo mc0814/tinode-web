@@ -15,6 +15,16 @@ const messages = defineMessages({
     id: 'delete_account_warning',
     defaultMessage: 'Are you sure you want to delete your account? It cannot be undone.',
     description: 'Warning message when deleting an account'
+  },
+  delete_all_message: {
+    id: 'delete_all_message',
+    defaultMessage: 'Delete all message',
+    description: 'Title for delete all message warning'
+  },
+  delete_all_message_warning: {
+    id: 'delete_all_message_warning',
+    defaultMessage: 'Are you sure you want to delete your all message? It cannot be undone.',
+    description: 'Warning message when deleting all message'
   }
 });
 
@@ -42,6 +52,7 @@ class AccSecurityView extends React.Component {
     this.handleHidePermissionsEditor = this.handleHidePermissionsEditor.bind(this);
     this.handlePermissionsChanged = this.handlePermissionsChanged.bind(this);
     this.handleDeleteAccount = this.handleDeleteAccount.bind(this);
+    this.handleSoftDeleteAllMessage = this.handleSoftDeleteAllMessage.bind(this);
   }
 
   handlePasswordUpdate(pwd) {
@@ -83,6 +94,19 @@ class AccSecurityView extends React.Component {
     );
   }
 
+  handleSoftDeleteAllMessage(e) {
+    e.preventDefault();
+    const {formatMessage} = this.props.intl;
+    this.props.onShowAlert(
+      formatMessage(messages.delete_all_message), // title
+      formatMessage(messages.delete_all_message_warning), // content
+      (_ => this.props.onSoftDeleteAllMessage()), // onConfirm
+      null, // use default text "OK"
+      true, // Show Reject button
+      null  // use default text "Cancel"
+    );
+  }
+
   render() {
     return (
       <>{this.state.showPermissionEditorFor ?
@@ -117,6 +141,10 @@ class AccSecurityView extends React.Component {
             <a href="#" className="danger flat-button" onClick={(e) => {this.handleDeleteAccount(e);}}>
               <i className="material-icons">delete</i> &nbsp;<FormattedMessage id="button_delete_account"
                 defaultMessage="Delete account" description="Button [Delete account]" />
+            </a>
+            <a href="#" className="danger flat-button" onClick={(e) => {this.handleSoftDeleteAllMessage(e);}}>
+              <i className="material-icons">delete</i> &nbsp;<FormattedMessage id="button_delete_all_message"
+                defaultMessage="Delete all message" description="Button [Delete all message]" />
             </a>
           </div>
           <div className="hr" />

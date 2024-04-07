@@ -83,6 +83,7 @@ class ContactList extends React.Component {
           if (!this.props.showMode && c.latestMessage) {
             const msg = c.latestMessage();
             if (msg) {
+              console.log('msg', msg.content, c.name);
               forwarded = msg.head ? msg.head.forwarded : null;
               deliveryStatus = msg._status || c.msgStatus(msg, true);
               previewIsResponse = msg.from != this.props.myUserId;
@@ -91,6 +92,8 @@ class ContactList extends React.Component {
                   msg.content.substr(0, MESSAGE_PREVIEW_LENGTH) :
                   Drafty.preview(msg.content, MESSAGE_PREVIEW_LENGTH);
               }
+            } else {
+              console.log('msg', msg, c.name);
             }
           }
 

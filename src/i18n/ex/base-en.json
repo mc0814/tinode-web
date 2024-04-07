@@ -79,6 +79,10 @@
     "defaultMessage": "Delete account",
     "description": "Button [Delete account]"
   },
+  "button_delete_all_message": {
+    "defaultMessage": "Delete all message",
+    "description": "Button [Delete all message]"
+  },
   "button_edit": {
     "defaultMessage": "Edit",
     "description": "Call to action [Edit]"
@@ -230,6 +234,14 @@
   "delete_account_warning": {
     "defaultMessage": "Are you sure you want to delete your account? It cannot be undone.",
     "description": "Warning message when deleting an account"
+  },
+  "delete_all_message": {
+    "defaultMessage": "Delete all message",
+    "description": "Title for delete all message warning"
+  },
+  "delete_all_message_warning": {
+    "defaultMessage": "Are you sure you want to delete your all message? It cannot be undone.",
+    "description": "Warning message when deleting all message"
   },
   "delete_messages_warning": {
     "defaultMessage": "Are you sure you want to delete all messages for everyone? It cannot be undone.",

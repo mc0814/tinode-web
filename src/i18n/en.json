@@ -691,7 +691,7 @@
     "obsolete": false
   },
   "menu_item_delete_for_all": {
-    "translation": "Delete for All",
+    "translation": "Revoke",
     "defaultMessage": "Delete for All",
     "description": "Delete selected message(s) for all members",
     "missing": false,
@@ -1645,6 +1645,27 @@
     "translation": "Scan QR Code",
     "defaultMessage": "Scan QR Code",
     "description": "Title for scanning QR code",
+    "missing": false,
+    "obsolete": false
+  },
+  "button_delete_all_message": {
+    "translation": "Delete all message",
+    "defaultMessage": "Delete all message",
+    "description": "Button [Delete all message]",
+    "missing": false,
+    "obsolete": false
+  },
+  "delete_all_message": {
+    "translation": "Delete all message",
+    "defaultMessage": "Delete all message",
+    "description": "Title for delete all message warning",
+    "missing": false,
+    "obsolete": false
+  },
+  "delete_all_message_warning": {
+    "translation": "Are you sure you want to delete your all message? It cannot be undone.",
+    "defaultMessage": "Are you sure you want to delete your all message? It cannot be undone.",
+    "description": "Warning message when deleting all message",
     "missing": false,
     "obsolete": false
   }

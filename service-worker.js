@@ -1,6 +1,6 @@
 // Must be located at the root.
-importScripts('https://cdn.jsdelivr.net/npm/firebase@9.14.0/firebase-app-compat.js');
-importScripts('https://cdn.jsdelivr.net/npm/firebase@9.14.0/firebase-messaging-compat.js');
+importScripts('https://fastly.jsdelivr.net/npm/firebase@9.14.0/firebase-app-compat.js');
+importScripts('https://fastly.jsdelivr.net/npm/firebase@9.14.0/firebase-messaging-compat.js');
 importScripts('firebase-init.js');
 importScripts('version.js');
 
@@ -67,37 +67,37 @@ self.i18nMessage = function(id) {
   return lang[id] || i18n['en'][id] || id;
 }
 
-firebase.initializeApp(FIREBASE_INIT);
-const fbMessaging = firebase.messaging();
-
-// This method shows the push notifications while the window is in background.
-fbMessaging.onBackgroundMessage(payload => {
-  // Notify webapp that a message was received.
-  if (webAppChannel) {
-    webAppChannel.postMessage(payload.data);
-  }
-
-  if (payload.data.silent == 'true') {
-    // No need to show anything.
-    return;
-  }
-
-  const titles = {'msg': 'new_message', 'sub': 'new_chat'};
-  const pushType = payload.data.what || 'msg';
-  const title = payload.data.title || self.i18nMessage(titles[pushType]);
-  if (title) {
-    const options = {
-      body: payload.data.content || '', // TODO: content for 'sub' should be topic's or user's title.
-      icon: '/img/logo96.png', // TODO: use topic's or user's avatar (would have to fetch for 'sub', read from db for 'msg').
-      badge: '/img/badge96.png',
-      tag: payload.data.topic || undefined,
-      data: {
-        topic: payload.data.topic
-      }
-    };
-    return self.registration.showNotification(title, options);
-  }
-});
+// firebase.initializeApp(FIREBASE_INIT);
+// const fbMessaging = firebase.messaging();
+//
+// // This method shows the push notifications while the window is in background.
+// fbMessaging.onBackgroundMessage(payload => {
+//   // Notify webapp that a message was received.
+//   if (webAppChannel) {
+//     webAppChannel.postMessage(payload.data);
+//   }
+//
+//   if (payload.data.silent == 'true') {
+//     // No need to show anything.
+//     return;
+//   }
+//
+//   const titles = {'msg': 'new_message', 'sub': 'new_chat'};
+//   const pushType = payload.data.what || 'msg';
+//   const title = payload.data.title || self.i18nMessage(titles[pushType]);
+//   if (title) {
+//     const options = {
+//       body: payload.data.content || '', // TODO: content for 'sub' should be topic's or user's title.
+//       icon: '/img/logo96.png', // TODO: use topic's or user's avatar (would have to fetch for 'sub', read from db for 'msg').
+//       badge: '/img/badge96.png',
+//       tag: payload.data.topic || undefined,
+//       data: {
+//         topic: payload.data.topic
+//       }
+//     };
+//     return self.registration.showNotification(title, options);
+//   }
+// });
 
 // Update service worker immediately for both the current client
 // and all other active clients.

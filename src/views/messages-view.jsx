@@ -668,6 +668,7 @@ class MessagesView extends React.Component {
 
   handleSubsUpdated() {
     if (this.state.topic) {
+      console.log(123123, 'handleSubsUpdated');
       const subs = [];
       const topic = this.props.tinode.getTopic(this.state.topic);
       topic.subscribers(sub => {
@@ -697,9 +698,11 @@ class MessagesView extends React.Component {
     }
     const topic = this.props.tinode.getTopic(this.state.topic);
     if (!msg) {
+      console.log(123, '触发到更新视图啦', this.state.topic);
       // msg could be null if one or more messages were deleted.
       // Updating state to force redraw.
       this.setState({latestClearId: topic.maxClearId()});
+      this.props.onResetContactList();
       return;
     }
 
@@ -728,6 +731,7 @@ class MessagesView extends React.Component {
     if (status >= Tinode.MESSAGE_STATUS_SENT && msg.from != this.props.myUserId) {
       this.postReadNotification(msg.seq);
     }
+    this.props.onResetContactList();
   }
 
   handleAllMessagesReceived(count) {
@@ -825,6 +829,8 @@ class MessagesView extends React.Component {
       }
       const acs = topic.getAccessMode();
       if (acs && acs.isDeleter()) {
+        menuItems.push('message_delete_hard');
+      } else if (params.userFrom === this.props.myUserId && !topic.isChannelType()) {
         menuItems.push('message_delete_hard');
       }
     }
