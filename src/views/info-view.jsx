@@ -114,6 +114,7 @@ class InfoView extends React.Component {
       trustedBadges: [],
       previousMetaDesc: undefined,
       previousSubsUpdated: undefined,
+      expirePeriod: 86400
     };
 
     this.resetSubs = this.resetSubs.bind(this);
@@ -133,6 +134,7 @@ class InfoView extends React.Component {
     this.handleMemberSelected = this.handleMemberSelected.bind(this);
     this.handleContextMenu = this.handleContextMenu.bind(this);
     this.handleBackNavigate = this.handleBackNavigate.bind(this);
+    this.handleExpirePeriodChanged = this.handleExpirePeriodChanged.bind(this);
   }
 
   // No need to separately handle component mount.
@@ -223,7 +225,8 @@ class InfoView extends React.Component {
       modeGiven: acs ? acs.getGiven() : undefined,
       modeWant: acs ? acs.getWant() : undefined,
       auth: defacs.auth,
-      anon: defacs.anon
+      anon: defacs.anon,
+      expirePeriod: topic.expirePeriod ? topic.expirePeriod: 86400
     });
   }
 
@@ -378,7 +381,7 @@ class InfoView extends React.Component {
 
   handleCopyID(e) {
     e.preventDefault();
-    navigator.clipboard.writeText(this.props.myUserId);
+    navigator.clipboard.writeText(this.state.address);
   }
 
   handleShowQRCode(e) {
@@ -444,6 +447,14 @@ class InfoView extends React.Component {
       x: params.x,
       y: params.y,
       user: params.topicName}, menuItems);
+  }
+
+  handleExpirePeriodChanged(expirePeriod) {
+    if (this.state.expirePeriod !== expirePeriod) {
+      this.setState({expirePeriod: expirePeriod});
+      // 通知服务端改了 过期时间
+      this.props.onExpirePeriodChanged(this.props.topic, expirePeriod);
+    }
   }
 
   render() {
@@ -523,6 +534,7 @@ class InfoView extends React.Component {
             modeWant2={this.state.modeWant2}
             auth={this.state.auth}
             anon={this.state.anon}
+            expirePeriod={this.state.expirePeriod}
 
             onShowAlert={this.props.onShowAlert}
             onDeleteMessages={this.props.onDeleteMessages}
@@ -530,11 +542,12 @@ class InfoView extends React.Component {
             onBlockTopic={this.props.onBlockTopic}
             onReportTopic={this.props.onReportTopic}
             onLaunchPermissionsEditor={this.handleLaunchPermissionsEditor}
+            onExpirePeriodChanged={this.handleExpirePeriodChanged}
             onNavigate={this.props.onNavigate} />
           :
         view == 'qrcode' ?
           <ShowQRCode
-            uri={Tinode.URI_TOPIC_ID_PREFIX + this.props.tinode.myUserId}
+            uri={Tinode.URI_TOPIC_ID_PREFIX + this.state.address}
             onCancel={this.handleBackNavigate} />
           :
           <div id="info-view-content" className="scrollable-panel">

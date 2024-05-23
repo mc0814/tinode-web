@@ -1523,7 +1523,7 @@
     "obsolete": false
   },
   "menu_item_audio_call": {
-    "translation": "稱呼",
+    "translation": "语音通话",
     "defaultMessage": "Call",
     "description": "Start audio call",
     "missing": false,

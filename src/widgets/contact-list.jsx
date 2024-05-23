@@ -83,8 +83,9 @@ class ContactList extends React.Component {
           if (!this.props.showMode && c.latestMessage) {
             const msg = c.latestMessage();
             if (msg) {
-              console.log('msg', msg.content, c.name);
+              // console.log('msg', msg.content, c.name);// TODO 打印所有会话最新消息
               forwarded = msg.head ? msg.head.forwarded : null;
+              // console.log(444444, msg);
               deliveryStatus = msg._status || c.msgStatus(msg, true);
               previewIsResponse = msg.from != this.props.myUserId;
               if (msg.content) {
@@ -93,7 +94,7 @@ class ContactList extends React.Component {
                   Drafty.preview(msg.content, MESSAGE_PREVIEW_LENGTH);
               }
             } else {
-              console.log('msg', msg, c.name);
+              // console.log('msg', msg, c.name); // TODO 打印所有会话最新消息
             }
           }
 

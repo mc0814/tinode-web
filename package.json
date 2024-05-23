@@ -1,6 +1,6 @@
 {
-  "name": "tinode-webapp",
-  "description": "Tinode messenger for the web",
+  "name": "im",
+  "description": "IM messenger for the web",
   "version": "0.22.12",
   "repository": {
     "type": "git",
@@ -18,7 +18,8 @@
     "i18n:obsolete": "node scripts/i18n.js obsolete",
     "vers": "node scripts/gen-version.js",
     "extract": "formatjs extract \"src/**/*.{js,jsx}\" --out-file src/i18n/ex/base-en.json --id-interpolation-pattern '[sha512:contenthash:base64:6]'",
-    "compile": "formatjs compile"
+    "compile": "formatjs compile",
+    "electron-start": "electron ."
   },
   "browserslist": "> 0.5%, not IE 11, not op_mini all, not and_uc >0",
   "files": [
@@ -56,7 +57,7 @@
     "zh",
     "zh-TW"
   ],
-  "main": "umd/index.prod.js",
+  "main": "main.js",
   "bugs": {
     "url": "https://github.com/tinode/webapp/issues"
   },
@@ -84,9 +85,11 @@
     "browserslist": "^4.21.10",
     "copy-webpack-plugin": "^11.0.0",
     "cssnano": "^6.0.1",
+    "electron": "^29.2.0",
     "glob": "^10.3.3",
     "postcss": "^8.4.27",
     "postcss-cli": "^10.1.0",
+    "react-scripts": "^5.0.1",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   }

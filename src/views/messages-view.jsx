@@ -644,6 +644,9 @@ class MessagesView extends React.Component {
           const topic = this.props.tinode.getTopic(this.state.topic);
           if (topic) {
             topic.noteRead(seq);
+            if (window.electronAPI) {
+              window.electronAPI.readMsg(this.state.topic, seq);
+            }
           }
         }
       }, NOTIFICATION_EXEC_INTERVAL);
@@ -693,6 +696,7 @@ class MessagesView extends React.Component {
 
   // The 'msg' could be false-ish if some message ranges were deleted.
   handleMessageUpdate(msg) {
+    // console.log('111', msg, this.state.topic);
     if (!this.state.topic) {
       return;
     }
@@ -703,9 +707,10 @@ class MessagesView extends React.Component {
       // Updating state to force redraw.
       this.setState({latestClearId: topic.maxClearId()});
       this.props.onResetContactList();
+      this.forceUpdate();
       return;
     }
-
+    // console.log(2222, topic, msg);
     clearTimeout(this.keyPressTimer)
     this.setState({maxSeqId: topic.maxMsgSeq(), minSeqId: topic.minMsgSeq(), typingIndicator: false}, _ => {
       // Scroll to the bottom if the message is added to the end of the message
@@ -727,6 +732,7 @@ class MessagesView extends React.Component {
 
     // Aknowledge messages except own messages. They are
     // automatically assumed to be read and recived.
+    // console.log(666666, msg);
     const status = topic.msgStatus(msg, true);
     if (status >= Tinode.MESSAGE_STATUS_SENT && msg.from != this.props.myUserId) {
       this.postReadNotification(msg.seq);
@@ -1446,6 +1452,7 @@ class MessagesView extends React.Component {
           previousFrom = thisFrom;
 
           const isReply = !(thisFrom == this.props.myUserId);
+          // console.log(555555, msg);
           const deliveryStatus = topic.msgStatus(msg, true);
 
           let userFrom = thisFrom, userName, userAvatar;

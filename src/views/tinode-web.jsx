@@ -342,6 +342,16 @@ class TinodeWeb extends React.Component {
       this.readTimer = null;
       this.readTimerCallback = null;
 
+      // set interval to delete expired message
+      this.autoDeleteExpiredMessageLock = false;
+      this.autoDeleteExpiredMessage = setInterval(_ => {
+        if (!this.autoDeleteExpiredMessageLock) {
+          this.autoDeleteExpiredMessageLock = true;
+          this.tinode.deleteExpiredMessages();
+          this.autoDeleteExpiredMessageLock = false;
+        }
+      }, 3000);
+
       // Parse the hash navigation params.
       const parsedNav = HashNavigation.parseUrlHash(window.location.hash);
       // Maybe navigate to home screen.
@@ -866,6 +876,10 @@ class TinodeWeb extends React.Component {
           POP_SOUND.play().catch(_ => {
             // play() throws if the user did not click the app first: https://goo.gl/xX8pDD.
           });
+          if (window.electronAPI) {
+            console.log(cont);
+            window.electronAPI.newMsg(what, cont.topic, cont.public.fn, cont.unread, cont.read, cont.seq);
+          }
         }
       }
       // Reorder contact list to use possibly updated 'touched'.
@@ -958,7 +972,7 @@ class TinodeWeb extends React.Component {
     newState.chatList.sort((a, b) => {
       return (a.touched || past).getTime() - (b.touched || past).getTime();
     });
-    console.log(newState.chatList);
+    // console.log(newState.chatList);
     // Merge search results and chat list.
     newState.searchableContacts = TinodeWeb.prepareSearchableContacts(newState.chatList, this.state.searchResults);
     this.setState(newState);
@@ -1067,6 +1081,7 @@ class TinodeWeb extends React.Component {
     // The uploader is used to show progress.
     msg._uploader = uploader;
 
+    msg.expirePeriod = topic.expirePeriod;
     if (head) {
       msg.head = Object.assign(msg.head || {}, head);
     }
@@ -1521,6 +1536,15 @@ class TinodeWeb extends React.Component {
     // Request hard-delete all messages.
     topic.delMessagesAll(true)
       .catch(err => this.handleError(err.message, 'err'));
+  }
+
+  handleExpirePeriodRequest(topicName, expirePeriod) {
+    const topic = this.tinode.getTopic(topicName);
+    if (!topic) {
+      return;
+    }
+    console.log(parseInt(expirePeriod));
+    topic.changeExpirePeriod(parseInt(expirePeriod));
   }
 
   handleLeaveUnsubRequest(topicName) {
@@ -2158,6 +2182,7 @@ class TinodeWeb extends React.Component {
             onMemberUpdateRequest={this.handleMemberUpdateRequest}
             onDeleteTopic={this.handleDeleteTopicRequest}
             onDeleteMessages={this.handleDeleteMessagesRequest}
+            onExpirePeriodChanged={this.handleExpirePeriodRequest}
             onLeaveTopic={this.handleLeaveUnsubRequest}
             onBlockTopic={this.handleBlockTopicRequest}
             onReportTopic={this.handleReportTopic}

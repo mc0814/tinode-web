@@ -1,6 +1,8 @@
 // Edit account parameters.
 import React from 'react';
 import { FormattedMessage, defineMessages, injectIntl } from 'react-intl';
+import {MAX_TITLE_LENGTH} from "../config";
+import {theCard} from "../lib/utils";
 
 const messages = defineMessages({
   clear_messages: {
@@ -74,11 +76,16 @@ class TopicSecurity extends React.PureComponent {
   constructor(props) {
     super(props);
 
+    this.state = {
+      expire: props.expirePeriod
+    };
+
     this.handleDeleteTopic = this.handleDeleteTopic.bind(this);
     this.handleDeleteMessages = this.handleDeleteMessages.bind(this);
     this.handleLeave = this.handleLeave.bind(this);
     this.handleBlock = this.handleBlock.bind(this);
     this.handleReport = this.handleReport.bind(this);
+    this.handleChangeExpirePeriod = this.handleChangeExpirePeriod.bind(this);
   }
 
   handleDeleteTopic(e) {
@@ -146,6 +153,11 @@ class TopicSecurity extends React.PureComponent {
     );
   }
 
+  handleChangeExpirePeriod(e) {
+    this.setState({expire: parseInt(e.target.value)})
+    this.props.onExpirePeriodChanged(parseInt(e.target.value));
+  }
+
   render() {
     const {formatMessage} = this.props.intl;
     return (
@@ -154,32 +166,46 @@ class TopicSecurity extends React.PureComponent {
           {!this.props.channel ?
             <a href="#" className="flat-button" onClick={this.handleDeleteMessages}>
               <i className="material-icons">delete_outline</i> &nbsp;{
-                formatMessage(this.props.deleter ? messages.delete_messages : messages.clear_messages)
-              }
+              formatMessage(this.props.deleter ? messages.delete_messages : messages.clear_messages)
+            }
             </a>
-            :
-            null
+          :
+          null
           }
           {this.props.owner ?
-            <a href="#" className="danger flat-button" onClick={this.handleDeleteTopic}>
-              <i className="material-icons">delete</i> &nbsp;{formatMessage(messages.topic_delete)}
-            </a>
+            <>
+              <a href="#" className="danger flat-button" onClick={this.handleDeleteTopic}>
+                <i className="material-icons">delete</i> &nbsp;{formatMessage(messages.topic_delete)}
+              </a>
+              <select value={this.state.expire} onChange={this.handleChangeExpirePeriod}>
+                {[...Array(24)].map((_, index) => (
+                    <option key={(index + 1) * 60 * 60} value={(index + 1) * 60 * 60}>{index + 1} 小时</option>
+                ))}
+              </select>
+            </>
             :
             <a href="#" className="danger flat-button" onClick={this.handleLeave}>
               <i className="material-icons">exit_to_app</i> &nbsp;{formatMessage(messages.leave_chat)}
             </a>
           }
-          {!this.props.groupTopic ?
-            <a href="#" className="danger flat-button" onClick={this.handleBlock}>
-              <i className="material-icons">block</i> &nbsp;{formatMessage(messages.block_contact)}
-            </a>
-            :
-            null
-          }
           {!this.props.owner ?
-            <a href="#" className="danger flat-button" onClick={this.handleReport}>
-              <i className="material-icons">report</i> &nbsp;{formatMessage(messages.report_chat)}
-            </a>
+              <a href="#" className="danger flat-button" onClick={this.handleReport}>
+                <i className="material-icons">report</i> &nbsp;{formatMessage(messages.report_chat)}
+              </a>
+              :
+              null
+          }
+          {!this.props.groupTopic ?
+            <>
+              <a href="#" className="danger flat-button" onClick={this.handleBlock}>
+                <i className="material-icons">block</i> &nbsp;{formatMessage(messages.block_contact)}
+              </a>
+              <select value={this.state.expire} onChange={this.handleChangeExpirePeriod}>
+                {[...Array(24)].map((_, index) => (
+                    <option key={(index + 1) * 60 * 60} value={(index + 1) * 60 * 60}>{index + 1} 小时</option>
+                ))}
+              </select>
+            </>
             :
             null
           }
