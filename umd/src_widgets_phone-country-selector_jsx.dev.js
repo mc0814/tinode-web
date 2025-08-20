@@ -1,5 +1,5 @@
 "use strict";
-(globalThis["webpackChunktinode_webapp"] = globalThis["webpackChunktinode_webapp"] || []).push([["src_widgets_phone-country-selector_jsx"],{
+(globalThis["webpackChunkim"] = globalThis["webpackChunkim"] || []).push([["src_widgets_phone-country-selector_jsx"],{
 
 /***/ "./src/widgets/phone-country-selector.jsx":
 /*!************************************************!*\

@@ -53,6 +53,7 @@ class AudioPlayer extends React.PureComponent {
     this.handlePlay = this.handlePlay.bind(this);
     this.handleSeek = this.handleSeek.bind(this);
     this.handleError = this.handleError.bind(this);
+    this.getBlob = this.getBlob.bind(this);
 
     this.audioPlayer = null;
 
@@ -92,15 +93,29 @@ class AudioPlayer extends React.PureComponent {
     }
   }
 
-  initAudio() {
-    this.audioPlayer = new Audio(this.props.src);
-    this.audioPlayer.onloadedmetadata = _ => this.setState({canPlay: true});
-    this.audioPlayer.ontimeupdate = _ => this.setState({
-      currentTime: secondsToTime(this.audioPlayer.currentTime, this.state.longMin)
-    });
-    this.audioPlayer.onended = _ => {
-      this.audioPlayer.currentTime = 0;
-      this.setState({playing: false, currentTime: secondsToTime(0, this.state.longMin)})
+  async initAudio() {
+    // when do not support webm, trans to mp3
+    try {
+      let src = this.props.src;
+      if (!MediaRecorder.isTypeSupported("audio/webm") && this.props.src.startsWith("blob:")) {
+        console.log("not support webm", src);
+        const blob = await this.getBlob(src);
+        src = URL.createObjectURL(blob);
+        console.log("mp3 src: ", src);
+      }
+      console.log("src:", src);
+      this.audioPlayer = new Audio(src);
+      this.audioPlayer.load();
+      this.audioPlayer.onloadedmetadata = _ => this.setState({canPlay: true});
+      this.audioPlayer.ontimeupdate = _ => this.setState({
+        currentTime: secondsToTime(this.audioPlayer.currentTime, this.state.longMin)
+      });
+      this.audioPlayer.onended = _ => {
+        this.audioPlayer.currentTime = 0;
+        this.setState({playing: false, currentTime: secondsToTime(0, this.state.longMin)})
+      }
+    } catch (e) {
+      console.log("init audio fail", e);
     }
   }
 
@@ -241,6 +256,25 @@ class AudioPlayer extends React.PureComponent {
         this.visualize();
       }
     }
+  }
+
+  getBlob(url) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.overrideMimeType('audio/mp4');
+
+      xhr.onload = (event) => {
+        var blob = xhr.response;
+        resolve(blob);
+      };
+      xhr.onerror = (event) => {
+        reject(event);
+      };
+
+      xhr.open('GET', url);
+      xhr.send();
+    });
   }
 
   render() {

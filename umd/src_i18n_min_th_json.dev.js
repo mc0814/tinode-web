@@ -1,5 +1,5 @@
 "use strict";
-(globalThis["webpackChunktinode_webapp"] = globalThis["webpackChunktinode_webapp"] || []).push([["src_i18n_min_th_json"],{
+(globalThis["webpackChunkim"] = globalThis["webpackChunkim"] || []).push([["src_i18n_min_th_json"],{
 
 /***/ "./src/i18n.min/th.json":
 /*!******************************!*\

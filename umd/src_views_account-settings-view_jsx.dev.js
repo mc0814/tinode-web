@@ -1,5 +1,5 @@
 "use strict";
-(globalThis["webpackChunktinode_webapp"] = globalThis["webpackChunktinode_webapp"] || []).push([["src_views_account-settings-view_jsx"],{
+(globalThis["webpackChunkim"] = globalThis["webpackChunkim"] || []).push([["src_views_account-settings-view_jsx"],{
 
 /***/ "./src/views/account-settings-view.jsx":
 /*!*********************************************!*\

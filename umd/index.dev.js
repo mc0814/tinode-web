@@ -3753,6 +3753,20 @@ const messages = (0,react_intl__WEBPACK_IMPORTED_MODULE_1__.defineMessages)({
       "type": 0,
       "value": "Are you sure you want to delete your account? It cannot be undone."
     }]
+  },
+  delete_all_message: {
+    id: "delete_all_message",
+    defaultMessage: [{
+      "type": 0,
+      "value": "Delete all message"
+    }]
+  },
+  delete_all_message_warning: {
+    id: "delete_all_message_warning",
+    defaultMessage: [{
+      "type": 0,
+      "value": "Are you sure you want to delete your all message? It cannot be undone."
+    }]
   }
 });
 class AccSecurityView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) {
@@ -3777,6 +3791,7 @@ class AccSecurityView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Comp
     this.handleHidePermissionsEditor = this.handleHidePermissionsEditor.bind(this);
     this.handlePermissionsChanged = this.handlePermissionsChanged.bind(this);
     this.handleDeleteAccount = this.handleDeleteAccount.bind(this);
+    this.handleSoftDeleteAllMessage = this.handleSoftDeleteAllMessage.bind(this);
   }
   handlePasswordUpdate(pwd) {
     this.setState({
@@ -3811,6 +3826,13 @@ class AccSecurityView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Comp
       formatMessage
     } = this.props.intl;
     this.props.onShowAlert(formatMessage(messages.delete_account), formatMessage(messages.delete_account_warning), _ => this.props.onDeleteAccount(), null, true, null);
+  }
+  handleSoftDeleteAllMessage(e) {
+    e.preventDefault();
+    const {
+      formatMessage
+    } = this.props.intl;
+    this.props.onShowAlert(formatMessage(messages.delete_all_message), formatMessage(messages.delete_all_message_warning), _ => this.props.onSoftDeleteAllMessage(), null, true, null);
   }
   render() {
     return react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, this.state.showPermissionEditorFor ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_widgets_permissions_editor_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
@@ -3872,6 +3894,20 @@ class AccSecurityView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Comp
       defaultMessage: [{
         "type": 0,
         "value": "Delete account"
+      }]
+    })), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      className: "danger flat-button",
+      onClick: e => {
+        this.handleSoftDeleteAllMessage(e);
+      }
+    }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
+      className: "material-icons"
+    }, "delete"), " \xA0", react__WEBPACK_IMPORTED_MODULE_0___default().createElement(react_intl__WEBPACK_IMPORTED_MODULE_1__.FormattedMessage, {
+      id: "button_delete_all_message",
+      defaultMessage: [{
+        "type": 0,
+        "value": "Delete all message"
       }]
     }))), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "hr"
@@ -4329,7 +4365,8 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
       contactList: [],
       trustedBadges: [],
       previousMetaDesc: undefined,
-      previousSubsUpdated: undefined
+      previousSubsUpdated: undefined,
+      expirePeriod: 86400
     };
     this.resetSubs = this.resetSubs.bind(this);
     this.resetDesc = this.resetDesc.bind(this);
@@ -4348,6 +4385,7 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
     this.handleMemberSelected = this.handleMemberSelected.bind(this);
     this.handleContextMenu = this.handleContextMenu.bind(this);
     this.handleBackNavigate = this.handleBackNavigate.bind(this);
+    this.handleExpirePeriodChanged = this.handleExpirePeriodChanged.bind(this);
   }
   componentDidUpdate(props) {
     const topic = this.props.tinode.getTopic(props.topic);
@@ -4430,7 +4468,8 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
       modeGiven: acs ? acs.getGiven() : undefined,
       modeWant: acs ? acs.getWant() : undefined,
       auth: defacs.auth,
-      anon: defacs.anon
+      anon: defacs.anon,
+      expirePeriod: topic.expirePeriod ? topic.expirePeriod : 86400
     });
   }
   resetTags(topic) {
@@ -4579,7 +4618,7 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
   }
   handleCopyID(e) {
     e.preventDefault();
-    navigator.clipboard.writeText(this.props.myUserId);
+    navigator.clipboard.writeText(this.state.address);
   }
   handleShowQRCode(e) {
     e.preventDefault();
@@ -4643,6 +4682,14 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
       y: params.y,
       user: params.topicName
     }, menuItems);
+  }
+  handleExpirePeriodChanged(expirePeriod) {
+    if (this.state.expirePeriod !== expirePeriod) {
+      this.setState({
+        expirePeriod: expirePeriod
+      });
+      this.props.onExpirePeriodChanged(this.props.topic, expirePeriod);
+    }
   }
   render() {
     const args = (this.props.panel || 'info').split('/');
@@ -4713,15 +4760,17 @@ class InfoView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component) 
       modeWant2: this.state.modeWant2,
       auth: this.state.auth,
       anon: this.state.anon,
+      expirePeriod: this.state.expirePeriod,
       onShowAlert: this.props.onShowAlert,
       onDeleteMessages: this.props.onDeleteMessages,
       onLeaveTopic: this.props.onLeaveTopic,
       onBlockTopic: this.props.onBlockTopic,
       onReportTopic: this.props.onReportTopic,
       onLaunchPermissionsEditor: this.handleLaunchPermissionsEditor,
+      onExpirePeriodChanged: this.handleExpirePeriodChanged,
       onNavigate: this.props.onNavigate
     }) : view == 'qrcode' ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_widgets_show_qrcode_jsx__WEBPACK_IMPORTED_MODULE_11__["default"], {
-      uri: tinode_sdk__WEBPACK_IMPORTED_MODULE_2__.Tinode.URI_TOPIC_ID_PREFIX + this.props.tinode.myUserId,
+      uri: tinode_sdk__WEBPACK_IMPORTED_MODULE_2__.Tinode.URI_TOPIC_ID_PREFIX + this.state.address,
       onCancel: this.handleBackNavigate
     }) : react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       id: "info-view-content",
@@ -5696,6 +5745,9 @@ class MessagesView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Compone
           const topic = this.props.tinode.getTopic(this.state.topic);
           if (topic) {
             topic.noteRead(seq);
+            if (window.electronAPI) {
+              window.electronAPI.readMsg(this.state.topic, seq);
+            }
           }
         }
       }, NOTIFICATION_EXEC_INTERVAL);
@@ -5716,6 +5768,7 @@ class MessagesView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Compone
   }
   handleSubsUpdated() {
     if (this.state.topic) {
+      console.log(123123, 'handleSubsUpdated');
       const subs = [];
       const topic = this.props.tinode.getTopic(this.state.topic);
       topic.subscribers(sub => {
@@ -5746,9 +5799,12 @@ class MessagesView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Compone
     }
     const topic = this.props.tinode.getTopic(this.state.topic);
     if (!msg) {
+      console.log(123, '触发到更新视图啦', this.state.topic);
       this.setState({
         latestClearId: topic.maxClearId()
       });
+      this.props.onResetContactList();
+      this.forceUpdate();
       return;
     }
     clearTimeout(this.keyPressTimer);
@@ -5775,6 +5831,7 @@ class MessagesView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Compone
     if (status >= tinode_sdk__WEBPACK_IMPORTED_MODULE_2__.Tinode.MESSAGE_STATUS_SENT && msg.from != this.props.myUserId) {
       this.postReadNotification(msg.seq);
     }
+    this.props.onResetContactList();
   }
   handleAllMessagesReceived(count) {
     this.setState({
@@ -5883,6 +5940,8 @@ class MessagesView extends (react__WEBPACK_IMPORTED_MODULE_0___default().Compone
       }
       const acs = topic.getAccessMode();
       if (acs && acs.isDeleter()) {
+        menuItems.push('message_delete_hard');
+      } else if (params.userFrom === this.props.myUserId && !topic.isChannelType()) {
         menuItems.push('message_delete_hard');
       }
     }
@@ -7200,6 +7259,7 @@ class SidepanelView extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureCo
       onUpdatePassword: this.props.onUpdatePassword,
       onLogout: this.props.onLogout,
       onDeleteAccount: this.props.onDeleteAccount,
+      onSoftDeleteAllMessage: this.props.onSoftDeleteAllMessage,
       onShowAlert: this.props.onShowAlert,
       onShowBlocked: this.props.onShowBlocked
     }) : view === 'support' ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_acc_support_view_jsx__WEBPACK_IMPORTED_MODULE_9__["default"], {
@@ -7451,6 +7511,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
     this.handleTagsUpdateRequest = this.handleTagsUpdateRequest.bind(this);
     this.handleLogout = this.handleLogout.bind(this);
     this.handleDeleteAccount = this.handleDeleteAccount.bind(this);
+    this.handleSoftDeleteAllMessage = this.handleSoftDeleteAllMessage.bind(this);
     this.handleDeleteTopicRequest = this.handleDeleteTopicRequest.bind(this);
     this.handleDeleteMessagesRequest = this.handleDeleteMessagesRequest.bind(this);
     this.handleLeaveUnsubRequest = this.handleLeaveUnsubRequest.bind(this);
@@ -7593,6 +7654,14 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       }
       this.readTimer = null;
       this.readTimerCallback = null;
+      this.autoDeleteExpiredMessageLock = false;
+      this.autoDeleteExpiredMessage = setInterval(_ => {
+        if (!this.autoDeleteExpiredMessageLock) {
+          this.autoDeleteExpiredMessageLock = true;
+          this.tinode.deleteExpiredMessages();
+          this.autoDeleteExpiredMessageLock = false;
+        }
+      }, 3000);
       const parsedNav = _lib_navigation_js__WEBPACK_IMPORTED_MODULE_18__["default"].parseUrlHash(window.location.hash);
       if (!['cred', 'reset', 'register'].includes(parsedNav.path[0])) {
         this.setState({
@@ -7635,7 +7704,6 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
     } = this.props.intl;
     const onError = (msg, err) => {
       console.error(msg, err);
-      this.handleError(formatMessage(messages.push_init_failed), 'err');
       this.setState({
         firebaseToken: null
       });
@@ -7644,7 +7712,6 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       });
     };
     try {
-      this.fcm = (0,firebase_messaging__WEBPACK_IMPORTED_MODULE_3__.getMessaging)((0,firebase_app__WEBPACK_IMPORTED_MODULE_2__.initializeApp)(FIREBASE_INIT, _config_js__WEBPACK_IMPORTED_MODULE_12__.APP_NAME));
       return navigator.serviceWorker.getRegistration('/service-worker.js').then(reg => {
         return reg || navigator.serviceWorker.register('/service-worker.js').then(reg => {
           this.checkForAppUpdate(reg);
@@ -7655,28 +7722,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
           locale: locale,
           version: _version_js__WEBPACK_IMPORTED_MODULE_14__.PACKAGE_VERSION
         }));
-        return TinodeWeb.requestFCMToken(this.fcm, reg);
-      }).then(token => {
-        const persist = _lib_local_storage_js__WEBPACK_IMPORTED_MODULE_17__["default"].getObject('keep-logged-in');
-        if (token != this.state.firebaseToken) {
-          this.tinode.setDeviceToken(token);
-          if (persist) {
-            _lib_local_storage_js__WEBPACK_IMPORTED_MODULE_17__["default"].setObject('firebase-token', token);
-          }
-        }
-        this.setState({
-          firebaseToken: token,
-          desktopAlerts: true
-        });
-        if (persist) {
-          _lib_local_storage_js__WEBPACK_IMPORTED_MODULE_17__["default"].updateObject('settings', {
-            desktopAlerts: true
-          });
-        }
-        (0,firebase_messaging__WEBPACK_IMPORTED_MODULE_3__.onMessage)(this.fcm, payload => {
-          this.handlePushMessage(payload);
-        });
-      }).catch(err => {
+      }).then(token => {}).catch(err => {
         onError(err);
         throw err;
       });
@@ -8073,6 +8119,10 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       if (cont.unread > 0 && this.state.messageSounds && !archived) {
         if (document.hidden || this.state.topicSelected != cont.topic) {
           POP_SOUND.play().catch(_ => {});
+          if (window.electronAPI) {
+            console.log(cont);
+            window.electronAPI.newMsg(what, cont.topic, cont.public.fn, cont.unread, cont.read, cont.seq);
+          }
         }
       }
       this.resetContactList();
@@ -8087,7 +8137,10 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
           topicSelectedAcs: cont.acs
         });
       }
-    } else if (what == 'del') {} else if (what == 'upd' || what == 'call') {} else {
+    } else if (what == 'del') {
+      console.log('me del', cont);
+      this.resetContactList();
+    } else if (what == 'upd' || what == 'call') {} else {
       console.info("Unsupported (yet) presence update:", what, "in", (cont || {}).topic);
     }
   }
@@ -8150,6 +8203,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
     }
   }
   tnFndSubsUpdated() {
+    console.log(123123, '这里触发噢噢噢噢');
     const foundContacts = [];
     this.tinode.getFndTopic().contacts(s => {
       foundContacts.push(s);
@@ -8215,6 +8269,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
   sendMessageToTopic(topic, msg, uploadCompletionPromise, uploader, head) {
     msg = topic.createMessage(msg, false);
     msg._uploader = uploader;
+    msg.expirePeriod = topic.expirePeriod;
     if (head) {
       msg.head = Object.assign(msg.head || {}, head);
     }
@@ -8626,6 +8681,11 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       this.handleLogout();
     });
   }
+  handleSoftDeleteAllMessage() {
+    this.tinode.softDelAllMessages().then(_ => {
+      this.resetContactList();
+    });
+  }
   handleDeleteTopicRequest(topicName) {
     const topic = this.tinode.getTopic(topicName);
     if (!topic) {
@@ -8643,6 +8703,14 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       return;
     }
     topic.delMessagesAll(true).catch(err => this.handleError(err.message, 'err'));
+  }
+  handleExpirePeriodRequest(topicName, expirePeriod) {
+    const topic = this.tinode.getTopic(topicName);
+    if (!topic) {
+      return;
+    }
+    console.log(parseInt(expirePeriod));
+    topic.changeExpirePeriod(parseInt(expirePeriod));
   }
   handleLeaveUnsubRequest(topicName) {
     const topic = this.tinode.getTopic(topicName);
@@ -9120,6 +9188,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       onCreateTopic: this.handleStartTopicRequest,
       onLogout: this.handleLogout,
       onDeleteAccount: this.handleDeleteAccount,
+      onSoftDeleteAllMessage: this.handleSoftDeleteAllMessage,
       onShowAlert: this.handleShowAlert,
       onCancel: this.handleSidepanelCancel,
       onError: this.handleError,
@@ -9171,6 +9240,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       onChangePermissions: this.handleChangePermissions,
       onNewChat: this.handleNewChatInvitation,
       sendMessage: this.handleSendMessage,
+      onResetContactList: this.resetContactList,
       onVideoCallClosed: this.handleCallClose
     }) : null, this.state.infoPanel ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_info_view_jsx__WEBPACK_IMPORTED_MODULE_9__["default"], {
       tinode: this.tinode,
@@ -9191,6 +9261,7 @@ class TinodeWeb extends (react__WEBPACK_IMPORTED_MODULE_0___default().Component)
       onMemberUpdateRequest: this.handleMemberUpdateRequest,
       onDeleteTopic: this.handleDeleteTopicRequest,
       onDeleteMessages: this.handleDeleteMessagesRequest,
+      onExpirePeriodChanged: this.handleExpirePeriodRequest,
       onLeaveTopic: this.handleLeaveUnsubRequest,
       onBlockTopic: this.handleBlockTopicRequest,
       onReportTopic: this.handleReportTopic,
@@ -9667,6 +9738,7 @@ class AudioPlayer extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureComp
     this.handlePlay = this.handlePlay.bind(this);
     this.handleSeek = this.handleSeek.bind(this);
     this.handleError = this.handleError.bind(this);
+    this.getBlob = this.getBlob.bind(this);
     this.audioPlayer = null;
     this.viewBuffer = [];
     this.canvasRef = react__WEBPACK_IMPORTED_MODULE_0___default().createRef();
@@ -9700,21 +9772,34 @@ class AudioPlayer extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureComp
       }, this.initCanvas);
     }
   }
-  initAudio() {
-    this.audioPlayer = new Audio(this.props.src);
-    this.audioPlayer.onloadedmetadata = _ => this.setState({
-      canPlay: true
-    });
-    this.audioPlayer.ontimeupdate = _ => this.setState({
-      currentTime: (0,_lib_strformat__WEBPACK_IMPORTED_MODULE_2__.secondsToTime)(this.audioPlayer.currentTime, this.state.longMin)
-    });
-    this.audioPlayer.onended = _ => {
-      this.audioPlayer.currentTime = 0;
-      this.setState({
-        playing: false,
-        currentTime: (0,_lib_strformat__WEBPACK_IMPORTED_MODULE_2__.secondsToTime)(0, this.state.longMin)
+  async initAudio() {
+    try {
+      let src = this.props.src;
+      if (!MediaRecorder.isTypeSupported("audio/webm") && this.props.src.startsWith("blob:")) {
+        console.log("not support webm", src);
+        const blob = await this.getBlob(src);
+        src = URL.createObjectURL(blob);
+        console.log("mp3 src: ", src);
+      }
+      console.log("src:", src);
+      this.audioPlayer = new Audio(src);
+      this.audioPlayer.load();
+      this.audioPlayer.onloadedmetadata = _ => this.setState({
+        canPlay: true
       });
-    };
+      this.audioPlayer.ontimeupdate = _ => this.setState({
+        currentTime: (0,_lib_strformat__WEBPACK_IMPORTED_MODULE_2__.secondsToTime)(this.audioPlayer.currentTime, this.state.longMin)
+      });
+      this.audioPlayer.onended = _ => {
+        this.audioPlayer.currentTime = 0;
+        this.setState({
+          playing: false,
+          currentTime: (0,_lib_strformat__WEBPACK_IMPORTED_MODULE_2__.secondsToTime)(0, this.state.longMin)
+        });
+      };
+    } catch (e) {
+      console.log("init audio fail", e);
+    }
   }
   initCanvas() {
     this.canvasRef.current.width = this.canvasRef.current.offsetWidth * CANVAS_UPSCALING;
@@ -9827,6 +9912,22 @@ class AudioPlayer extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureComp
         this.visualize();
       }
     }
+  }
+  getBlob(url) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.overrideMimeType('audio/mp4');
+      xhr.onload = event => {
+        var blob = xhr.response;
+        resolve(blob);
+      };
+      xhr.onerror = event => {
+        reject(event);
+      };
+      xhr.open('GET', url);
+      xhr.send();
+    });
   }
   render() {
     const playClass = 'material-icons' + (this.props.short ? '' : ' large') + (this.state.canPlay ? '' : ' disabled');
@@ -11776,7 +11877,7 @@ class ContactList extends (react__WEBPACK_IMPORTED_MODULE_0___default().Componen
               if (msg.content) {
                 preview = typeof msg.content == 'string' ? msg.content.substr(0, _config_js__WEBPACK_IMPORTED_MODULE_6__.MESSAGE_PREVIEW_LENGTH) : tinode_sdk__WEBPACK_IMPORTED_MODULE_2__.Drafty.preview(msg.content, _config_js__WEBPACK_IMPORTED_MODULE_6__.MESSAGE_PREVIEW_LENGTH);
               }
-            }
+            } else {}
           }
           contactNodes.push(react__WEBPACK_IMPORTED_MODULE_0___default().createElement(_contact_jsx__WEBPACK_IMPORTED_MODULE_3__["default"], {
             tinode: this.props.tinode,
@@ -15998,6 +16099,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var react_intl__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-intl */ "react-intl");
 /* harmony import */ var react_intl__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(react_intl__WEBPACK_IMPORTED_MODULE_1__);
+/* harmony import */ var _config__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../config */ "./src/config.js");
+/* harmony import */ var _lib_utils__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../lib/utils */ "./src/lib/utils.js");
+
+
 
 
 const messages = (0,react_intl__WEBPACK_IMPORTED_MODULE_1__.defineMessages)({
@@ -16096,11 +16201,15 @@ const messages = (0,react_intl__WEBPACK_IMPORTED_MODULE_1__.defineMessages)({
 class TopicSecurity extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureComponent) {
   constructor(props) {
     super(props);
+    this.state = {
+      expire: props.expirePeriod
+    };
     this.handleDeleteTopic = this.handleDeleteTopic.bind(this);
     this.handleDeleteMessages = this.handleDeleteMessages.bind(this);
     this.handleLeave = this.handleLeave.bind(this);
     this.handleBlock = this.handleBlock.bind(this);
     this.handleReport = this.handleReport.bind(this);
+    this.handleChangeExpirePeriod = this.handleChangeExpirePeriod.bind(this);
   }
   handleDeleteTopic(e) {
     e.preventDefault();
@@ -16139,6 +16248,12 @@ class TopicSecurity extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureCo
       this.props.onReportTopic(this.props.topic);
     }, null, true, null);
   }
+  handleChangeExpirePeriod(e) {
+    this.setState({
+      expire: parseInt(e.target.value)
+    });
+    this.props.onExpirePeriodChanged(parseInt(e.target.value));
+  }
   render() {
     const {
       formatMessage
@@ -16153,31 +16268,43 @@ class TopicSecurity extends (react__WEBPACK_IMPORTED_MODULE_0___default().PureCo
       onClick: this.handleDeleteMessages
     }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
       className: "material-icons"
-    }, "delete_outline"), " \xA0", formatMessage(this.props.deleter ? messages.delete_messages : messages.clear_messages)) : null, this.props.owner ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    }, "delete_outline"), " \xA0", formatMessage(this.props.deleter ? messages.delete_messages : messages.clear_messages)) : null, this.props.owner ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
       href: "#",
       className: "danger flat-button",
       onClick: this.handleDeleteTopic
     }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
       className: "material-icons"
-    }, "delete"), " \xA0", formatMessage(messages.topic_delete)) : react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    }, "delete"), " \xA0", formatMessage(messages.topic_delete)), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
+      value: this.state.expire,
+      onChange: this.handleChangeExpirePeriod
+    }, [...Array(24)].map((_, index) => react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+      key: (index + 1) * 60 * 60,
+      value: (index + 1) * 60 * 60
+    }, index + 1, " \u5C0F\u65F6")))) : react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
       href: "#",
       className: "danger flat-button",
       onClick: this.handleLeave
     }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
       className: "material-icons"
-    }, "exit_to_app"), " \xA0", formatMessage(messages.leave_chat)), !this.props.groupTopic ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
-      href: "#",
-      className: "danger flat-button",
-      onClick: this.handleBlock
-    }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
-      className: "material-icons"
-    }, "block"), " \xA0", formatMessage(messages.block_contact)) : null, !this.props.owner ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+    }, "exit_to_app"), " \xA0", formatMessage(messages.leave_chat)), !this.props.owner ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
       href: "#",
       className: "danger flat-button",
       onClick: this.handleReport
     }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
       className: "material-icons"
-    }, "report"), " \xA0", formatMessage(messages.report_chat)) : null), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
+    }, "report"), " \xA0", formatMessage(messages.report_chat)) : null, !this.props.groupTopic ? react__WEBPACK_IMPORTED_MODULE_0___default().createElement((react__WEBPACK_IMPORTED_MODULE_0___default().Fragment), null, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("a", {
+      href: "#",
+      className: "danger flat-button",
+      onClick: this.handleBlock
+    }, react__WEBPACK_IMPORTED_MODULE_0___default().createElement("i", {
+      className: "material-icons"
+    }, "block"), " \xA0", formatMessage(messages.block_contact)), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("select", {
+      value: this.state.expire,
+      onChange: this.handleChangeExpirePeriod
+    }, [...Array(24)].map((_, index) => react__WEBPACK_IMPORTED_MODULE_0___default().createElement("option", {
+      key: (index + 1) * 60 * 60,
+      value: (index + 1) * 60 * 60
+    }, index + 1, " \u5C0F\u65F6")))) : null), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "hr"
     }), react__WEBPACK_IMPORTED_MODULE_0___default().createElement("div", {
       className: "panel-form-column"
@@ -21245,7 +21372,7 @@ const unwrap = (value) => reverseTransformCache.get(value);
 /******/ 	/* webpack/runtime/load script */
 /******/ 	(() => {
 /******/ 		var inProgress = {};
-/******/ 		var dataWebpackPrefix = "tinode-webapp:";
+/******/ 		var dataWebpackPrefix = "im:";
 /******/ 		// loadScript function to load a script via script tag
 /******/ 		__webpack_require__.l = (url, done, key, chunkId) => {
 /******/ 			if(inProgress[url]) { inProgress[url].push(done); return; }
@@ -21389,7 +21516,7 @@ const unwrap = (value) => reverseTransformCache.get(value);
 /******/ 		
 /******/ 		}
 /******/ 		
-/******/ 		var chunkLoadingGlobal = globalThis["webpackChunktinode_webapp"] = globalThis["webpackChunktinode_webapp"] || [];
+/******/ 		var chunkLoadingGlobal = globalThis["webpackChunkim"] = globalThis["webpackChunkim"] || [];
 /******/ 		chunkLoadingGlobal.forEach(webpackJsonpCallback.bind(null, 0));
 /******/ 		chunkLoadingGlobal.push = webpackJsonpCallback.bind(null, chunkLoadingGlobal.push.bind(chunkLoadingGlobal));
 /******/ 	})();

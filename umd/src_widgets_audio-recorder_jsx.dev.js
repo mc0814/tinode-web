@@ -1,5 +1,5 @@
 "use strict";
-(globalThis["webpackChunktinode_webapp"] = globalThis["webpackChunktinode_webapp"] || []).push([["src_widgets_audio-recorder_jsx"],{
+(globalThis["webpackChunkim"] = globalThis["webpackChunkim"] || []).push([["src_widgets_audio-recorder_jsx"],{
 
 /***/ "./src/widgets/audio-recorder.jsx":
 /*!****************************************!*\
