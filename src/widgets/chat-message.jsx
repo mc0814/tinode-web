@@ -93,23 +93,28 @@ class BaseChatMessage extends React.PureComponent {
     if (this.props.received == Tinode.MESSAGE_STATUS_FAILED) {
       menuItems.push('menu_item_send_retry');
     }
-    if (this.props.userIsWriter && this.props.received > Tinode.MESSAGE_STATUS_FATAL) {
-      menuItems.push('menu_item_reply');
-      if (!this.props.response) {
-        let immutable = false;
-        Drafty.entities(this.props.content, (_0, _1, tp) => {
-          immutable = ['AU', 'EX', 'FM', 'IM', 'VC', 'VD'].includes(tp);
-          return immutable;
-        });
-        if (!immutable) {
-          Drafty.styles(this.props.content, tp => {
-            immutable = ['QQ'].includes(tp);
+    if (this.props.received > Tinode.MESSAGE_STATUS_FATAL) {
+      if (this.props.userIsWriter) {
+        menuItems.push('menu_item_reply');
+        if (!this.props.response) {
+          let immutable = false;
+          Drafty.entities(this.props.content, (_0, _1, tp) => {
+            immutable = ['AU', 'EX', 'FM', 'IM', 'VC', 'VD'].includes(tp);
             return immutable;
           });
+          if (!immutable) {
+            Drafty.styles(this.props.content, tp => {
+              immutable = ['QQ'].includes(tp);
+              return immutable;
+            });
+          }
+          if (!immutable) {
+            menuItems.push('menu_item_edit');
+          }
         }
-        if (!immutable) {
-          menuItems.push('menu_item_edit');
-        }
+      }
+      if (this.props.userIsAdmin) {
+        menuItems.push(this.props.pinned ? 'menu_item_unpin' : 'menu_item_pin');
       }
     }
     menuItems.push('menu_item_forward');
@@ -124,6 +129,7 @@ class BaseChatMessage extends React.PureComponent {
       x: e.pageX,
       pickReply: this.props.pickReply,
       editMessage: this.props.editMessage,
+      timestamp: this.props.timestamp,
     }, menuItems);
   }
 
@@ -148,6 +154,7 @@ class BaseChatMessage extends React.PureComponent {
     const sideClass = this.props.sequence + ' ' + (this.props.response ? 'left' : 'right');
     const bubbleClass = (this.props.sequence == 'single' || this.props.sequence == 'last') ? 'bubble tip' : 'bubble';
     const avatar = this.props.userAvatar || true;
+    let textSizeClass = 'message-content';
     const fullDisplay = (this.props.isGroup && this.props.response &&
       (this.props.sequence == 'single' || this.props.sequence == 'last'));
 
@@ -155,8 +162,8 @@ class BaseChatMessage extends React.PureComponent {
     const attachments = [];
     if (this.props.mimeType == Drafty.getContentType() && Drafty.isValid(content)) {
       Drafty.attachments(content, (att, i) => {
-        if (att.mime == 'application/json') {
-          // Don't show json objects as attachments.
+        if (Drafty.isFormResponseType(att.mime)) {
+          // Don't show json drafty form response objects as attachments.
           // They are not meant for users.
           return;
         }
@@ -174,7 +181,14 @@ class BaseChatMessage extends React.PureComponent {
       }, this);
       const tree = Drafty.format(content, fullFormatter, this.formatterContext);
       content = React.createElement(React.Fragment, null, tree);
-    } else if (typeof content != 'string') {
+    } else if (typeof content == 'string') {
+      // Make font bigger for emoji-only messages.
+      // Must use 'new RegExp(...)' because React does not like /{1-5}/.
+      if (new RegExp('^\\p{RGI_Emoji}{1,5}$', 'v').test(content || '')) {
+        // Content consists of 1-5 emoji characters. Count how many and use it to increase the font size.
+        textSizeClass += ' emoji-' + (content || '').match(/\p{RGI_Emoji}/vg).length;
+      }
+    } else {
       content = <><i className="material-icons gray">warning_amber</i> <i className="gray">
         <FormattedMessage id="invalid_content"
           defaultMessage="invalid content" description="Shown when the message is unreadable" /></i></>
@@ -196,7 +210,7 @@ class BaseChatMessage extends React.PureComponent {
         <div>
           <div className={bubbleClass}>
             <div className="content-meta">
-              <div className="message-content">
+              <div className={textSizeClass}>
                 {content}
                 {attachments}
               </div>

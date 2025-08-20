@@ -19,7 +19,7 @@ import MessagesView from './messages-view.jsx';
 import SidepanelView from './sidepanel-view.jsx';
 
 import { API_KEY, APP_NAME, DEFAULT_P2P_ACCESS_MODE, FORWARDED_PREVIEW_LENGTH, LOGGING_ENABLED,
-  MEDIA_BREAKPOINT } from '../config.js';
+  MEDIA_BREAKPOINT, WAKE_UP_TICK, WAKE_UP_TIMEOUT } from '../config.js';
 import { CALL_STATE_NONE, CALL_STATE_OUTGOING_INITATED,
          CALL_STATE_INCOMING_RECEIVED, CALL_STATE_IN_PROGRESS,
          CALL_HEAD_STARTED }  from '../constants.js';
@@ -89,6 +89,11 @@ const messages = defineMessages({
     id: 'password_reset_success',
     defaultMessage: 'Password reset successfully',
     description: 'Notification message that the password was successfully reset.'
+  },
+  select_country: {
+    id: 'select_country',
+    defaultMessage: 'Select country',
+    description: 'Placeholder for the country selector'
   }
 });
 
@@ -298,6 +303,18 @@ class TinodeWeb extends React.Component {
       console.warn("Your browser does not support BroadcastChannel. Some features will not be available");
     }
 
+    // Detect if computer just woke up from sleep. Checks how much time has passed since the last tick.
+    // If too much time has passed then the computer was asleep.
+    this.lastWakeUpCheck = new Date().getTime();
+    this.wakeUpTicker = setInterval(_ => {
+      const now = new Date().getTime();
+      if (now - this.lastWakeUpCheck > WAKE_UP_TIMEOUT) {
+        // Trigger reconnect.
+        this.handleOnlineOn();
+      }
+      this.lastWakeUpCheck = now;
+    }, WAKE_UP_TICK);
+
     // Window/tab visible or invisible for pausing timers.
     document.addEventListener('visibilitychange', this.handleVisibilityEvent);
 
@@ -374,6 +391,8 @@ class TinodeWeb extends React.Component {
     window.removeEventListener('online', this.handleOnlineOn);
     window.removeEventListener('offline', this.handleOnlineOff);
     document.removeEventListener('visibilitychange', this.handleVisibilityEvent);
+
+    clearInterval(this.wakeUpTicker);
   }
 
   // Setup transport (usually websocket) and server address. This will terminate connection with the server.
@@ -955,7 +974,7 @@ class TinodeWeb extends React.Component {
       newState.ready = true;
     }
 
-    this.tinode.getMeTopic().contacts((c) => {
+    this.tinode.getMeTopic().contacts(c => {
       if (!c.topic && !c.user) {
         // Contacts expect c.topic to be set.
         c.topic = c.name;
@@ -1634,7 +1653,7 @@ class TinodeWeb extends React.Component {
     }
 
     let muted = false, blocked = false, self_blocked = false, subscribed = false, deleter = false,
-      archived = false, webrtc = false;
+      archived = false, webrtc = false, writer = false, p2p = false, self = false;
     if (topic) {
       subscribed = topic.isSubscribed();
       archived = topic.isArchived();
@@ -1645,28 +1664,31 @@ class TinodeWeb extends React.Component {
         blocked = !acs.isJoiner();
         self_blocked = !acs.isJoiner('want');
         deleter = acs.isDeleter();
+        writer = acs.isWriter();
       }
     }
 
-    webrtc = !!this.tinode.getServerParam('iceServers');
+    webrtc = writer && !!this.tinode.getServerParam('iceServers');
+    p2p = Tinode.isP2PTopicName(topicName);
+    self = Tinode.isSelfTopicName(topicName);
 
     return [
       subscribed ? {
         title: this.props.intl.formatMessage(messages.menu_item_info),
         handler: this.handleShowInfoView
       } : null,
-      subscribed && Tinode.isP2PTopicName(topicName) && webrtc ? {
+      subscribed && p2p && webrtc ? {
         title: this.props.intl.formatMessage(messages.menu_item_audio_call),
         handler: this.handleStartAudioCall
       } : null,
-      subscribed && Tinode.isP2PTopicName(topicName) && webrtc ? {
+      subscribed && p2p && webrtc ? {
         title: this.props.intl.formatMessage(messages.menu_item_video_call),
         handler: this.handleStartVideoCall
       } : null,
       subscribed ? 'messages_clear' : null,
-      subscribed && deleter ? 'messages_clear_hard' : null,
-      muted ? (blocked ? null : 'topic_unmute') : 'topic_mute',
-      self_blocked ? 'topic_unblock' : 'topic_block',
+      subscribed && deleter && !self ? 'messages_clear_hard' : null,
+      self ? null : (muted ? (blocked ? null : 'topic_unmute') : 'topic_mute'),
+      self ? null : (self_blocked ? 'topic_unblock' : 'topic_block'),
       archived ? 'topic_restore' : 'topic_archive',
       'topic_delete'
     ];
@@ -1730,14 +1752,14 @@ class TinodeWeb extends React.Component {
     }
 
     if (added && added.length > 0) {
-      added.map((uid) => {
+      added.forEach(uid => {
         topic.invite(uid, null)
           .catch(err => this.handleError(err.message, 'err'));
       });
     }
 
     if (removed && removed.length > 0) {
-      removed.map((uid) => {
+      removed.forEach(uid => {
         topic.delSubscription(uid)
           .catch(err => this.handleError(err.message, 'err'));
       });
@@ -1785,7 +1807,7 @@ class TinodeWeb extends React.Component {
   }
 
   handleShowCountrySelector(code, dial, selectedCallback) {
-    this.handleShowAlert("Select country",
+    this.handleShowAlert(this.props.intl.formatMessage(messages.select_country),
       <Suspense fallback={<div><FormattedMessage id="loading_note" defaultMessage="Loading..."
         description="Message shown when component is loading"/></div>}>
         <PhoneCountrySelector
@@ -1795,7 +1817,7 @@ class TinodeWeb extends React.Component {
             selectedCallback(c, d);
           }} />
       </Suspense>,
-      null, null, _ => {}, "Cancel");
+      null, null, _ => {}, null);
   }
 
   handleStartVideoCall() {
@@ -1818,15 +1840,15 @@ class TinodeWeb extends React.Component {
     switch (callState) {
       case CALL_STATE_OUTGOING_INITATED:
         const head = { webrtc: CALL_HEAD_STARTED, aonly: !!audioOnly };
-        this.handleSendMessage(Drafty.videoCall(audioOnly), undefined, undefined, head)
+        return this.handleSendMessage(Drafty.videoCall(audioOnly), undefined, undefined, head)
           .then(ctrl => {
             if (ctrl.code < 200 || ctrl.code >= 300 || !ctrl.params || !ctrl.params.seq) {
               this.handleCallClose();
-              return;
+              return ctrl;
             }
             this.setState({callSeq: ctrl.params['seq']});
+            return ctrl
           });
-        break;
       case CALL_STATE_IN_PROGRESS:
         const topic = this.tinode.getTopic(callTopic);
         if (!topic) {
@@ -1893,16 +1915,21 @@ class TinodeWeb extends React.Component {
     });
   }
 
-  handleCallAccept(topicName) {
+  handleCallAccept(topicName, setCallTopic, callSeq) {
     const topic = this.tinode.getTopic(topicName);
     if (!topic) {
       return;
     }
     if (topic.isSubscribed()) {
-      this.handleTopicSelected(this.state.callTopic);
-      this.setState({
+      this.handleTopicSelected(setCallTopic ? topicName : this.state.callTopic);
+      const upd = {
         callState: CALL_STATE_IN_PROGRESS
-      });
+      };
+      if (setCallTopic) {
+        upd.callTopic = topicName;
+        upd.callSeq = callSeq;
+      }
+      this.setState(upd);
     } else {
       // We need to switch and subscribe to callTopic first.
       this.setState({
@@ -1940,7 +1967,7 @@ class TinodeWeb extends React.Component {
   }
 
   handleDataMessage(data) {
-    if (data.head && data.head.webrtc && data.head.webrtc == CALL_HEAD_STARTED) {
+    if (data.head && data.head.webrtc && data.head.webrtc == CALL_HEAD_STARTED && Tinode.isP2PTopicName(data.topic)) {
       // If it's a video call invite message.
       // See if we need to display incoming call UI.
       const topic = this.tinode.getTopic(data.topic);
@@ -2136,6 +2163,7 @@ class TinodeWeb extends React.Component {
             callState={this.state.callState}
             callAudioOnly={this.state.callAudioOnly}
             onCallHangup={this.handleCallHangup}
+            onAcceptCall={this.handleCallAccept}
 
             onCallInvite={this.handleCallInvite}
             onCallSendOffer={this.handleCallSendOffer}

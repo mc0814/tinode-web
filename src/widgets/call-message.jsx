@@ -12,6 +12,9 @@ export default class CallMessage extends React.PureComponent {
     const callIcon = this.props.incoming ?
       (isCallDropped ? 'call_missed' : 'call_received') :
       (isCallDropped ? 'call_missed_outgoing' : 'call_made');
+    const title = this.props.incoming ?
+          <FormattedMessage id="calls_incoming" defaultMessage="Incoming call" description="Incoming call label" /> :
+          <FormattedMessage id="calls_outgoing" defaultMessage="Outgoing call" description="Outgoing call label" />;
     let duration;
     if (isCallDropped) {
       switch (this.props.callState) {
@@ -36,10 +39,7 @@ export default class CallMessage extends React.PureComponent {
     return <div className="call-message">
       <div><i className="material-icons big gray">call</i></div>
       <div className="flex-column narrow">
-        <div>{this.props.incoming ?
-          <FormattedMessage id="calls_incoming" defaultMessage="Incoming call" description="Incoming call label" /> :
-          <FormattedMessage id="calls_outgoing" defaultMessage="Outgoing call" description="Outgoing call label" />
-        }</div>
+        <div>{title}</div>
         <div className="duration"><i className={successClass}>{callIcon}</i> {duration}</div>
       </div>
     </div>;

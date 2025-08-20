@@ -10,7 +10,7 @@ import NewTopicGroup from '../widgets/new-topic-group.jsx';
 import SearchContacts from '../widgets/search-contacts.jsx';
 
 import HashNavigation from '../lib/navigation.js';
-import { theCard } from '../lib/utils.js';
+import { asEmail, asPhone, theCard } from '../lib/utils.js';
 
 const messages = defineMessages({
   search_for_contacts: {
@@ -57,6 +57,26 @@ class NewTopicView extends React.Component {
   }
 
   handleSearchContacts(query) {
+    query = query.trim() || Tinode.DEL_CHAR;
+    if (!/[\s,:]/.test(query) && query != Tinode.DEL_CHAR) {
+      // No colons, spaces or commas, not DEL char. Try as email, phone, or alias.
+      const email = asEmail(query);
+      if (email) {
+        query = `${Tinode.TAG_EMAIL}${email}`;
+      } else {
+        const tel = asPhone(query);
+        if (tel) {
+          query = `${Tinode.TAG_PHONE}${tel}`;
+        } else {
+          if (query[0] == '@') {
+            // Strip the leading '@' sign if present.
+            query = query.substring(1);
+          }
+          // 'alice' -> 'alias:alice,alice'
+          query = `${Tinode.TAG_ALIAS}${query},${query}`;
+        }
+      }
+    }
     this.props.onSearchContacts(query);
     this.setState({searchQuery: Tinode.isNullValue(query) ? null : query});
   }
@@ -125,6 +145,7 @@ class NewTopicView extends React.Component {
                 contacts={this.props.searchResults}
                 myUserId={this.props.myUserId}
                 emptyListMessage={no_contacts_placeholder}
+                showSelfTopic={!this.state.searchQuery}
                 showOnline={false}
                 showUnread={false}
                 showContextMenu={false}

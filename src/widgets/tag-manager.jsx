@@ -4,6 +4,8 @@ import { FormattedMessage } from 'react-intl';
 
 import ChipInput from './chip-input.jsx';
 
+import { Tinode } from 'tinode-sdk';
+
 import { MAX_TAG_COUNT, MAX_TAG_LENGTH, MIN_TAG_LENGTH } from '../config.js';
 import { arrayEqual } from '../lib/utils.js';
 
@@ -13,6 +15,7 @@ export default class TagManager extends React.Component {
 
     this.state = {
       tags: this.props.tags || [],
+      alias: Tinode.tagByPrefix(this.props.tags, Tinode.TAG_ALIAS) || '',
       tagInput: '',
       activated: this.props.activated
     };
@@ -27,7 +30,10 @@ export default class TagManager extends React.Component {
   static getDerivedStateFromProps(nextProps, prevState) {
     const tags = nextProps.tags || [];
     if (!arrayEqual(tags, prevState.tags) && !prevState.activated) {
-      return {tags: tags};
+      return {
+        tags: tags || [],
+        alias: Tinode.tagByPrefix(tags, Tinode.TAG_ALIAS) || '',
+      };
     }
     return null;
   }
@@ -49,7 +55,7 @@ export default class TagManager extends React.Component {
   }
 
   handleAddTag(tag) {
-    const maxTagCount = this.props.tinode.getServerParam('maxTagCount', MAX_TAG_COUNT);
+    const maxTagCount = this.props.tinode.getServerParam(Tinode.MAX_TAG_COUNT, MAX_TAG_COUNT);
 
     if (tag.length > 0 && this.state.tags.length < maxTagCount) {
       const tags = this.state.tags.slice(0);
@@ -74,8 +80,12 @@ export default class TagManager extends React.Component {
   }
 
   handleSubmit() {
-    // Add unprocessed input to tags, submit the list.
-    this.props.onSubmit(this.handleAddTag(this.state.tagInput.trim()));
+    // Add unprocessed input to tags.
+    let tags = this.handleAddTag(this.state.tagInput.trim());
+    // Add back the alias (and overwrite one possibly added by hand).
+    tags = Tinode.setUniqueTag(tags, this.state.alias);
+    // Submit the updated list.
+    this.props.onSubmit(tags);
     this.setState({activated: false, tags: this.props.tags || []});
   }
 
@@ -87,17 +97,22 @@ export default class TagManager extends React.Component {
   }
 
   render() {
-    const minTagLength = this.props.tinode.getServerParam('minTagLength', MIN_TAG_LENGTH);
-    const maxTagLength = this.props.tinode.getServerParam('maxTagLength', MAX_TAG_LENGTH);
+    const minTagLength = this.props.tinode.getServerParam(Tinode.MIN_TAG_LENGTH, MIN_TAG_LENGTH);
+    const maxTagLength = this.props.tinode.getServerParam(Tinode.MAX_TAG_LENGTH, MAX_TAG_LENGTH);
 
     let tags = [];
     if (this.state.activated) {
-      this.state.tags.map((tag) => {
-        tags.push({user: tag, invalid: (tag.length < minTagLength || tag.length > maxTagLength)});
+      this.state.tags.forEach(tag => {
+        if (tag != this.state.alias) {
+          tags.push({user: tag, invalid: (tag.length < minTagLength || tag.length > maxTagLength)});
+        }
       });
+
     } else {
-      this.state.tags.map((tag) => {
-        tags.push(<span className="badge" key={tags.length}>{tag}</span>);
+      this.state.tags.forEach(tag => {
+        if (tag != this.state.alias) {
+          tags.push(<span className="badge" key={tags.length}>{tag}</span>);
+        }
       });
       if (tags.length == 0) {
         tags = (

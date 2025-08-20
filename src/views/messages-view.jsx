@@ -17,12 +17,13 @@ import LetterTile from '../widgets/letter-tile.jsx';
 import LoadSpinner from '../widgets/load-spinner.jsx';
 import LogoView from './logo-view.jsx';
 import MetaMessage from '../widgets/meta-message.jsx';
+import PinnedMessages from '../widgets/pinned-messages.jsx';
 import SendMessage from '../widgets/send-message.jsx';
 import VideoPreview from '../widgets/video-preview.jsx';
 
 import { DEFAULT_P2P_ACCESS_MODE, EDIT_PREVIEW_LENGTH, IMAGE_PREVIEW_DIM, IMMEDIATE_P2P_SUBSCRIPTION,
-  KEYPRESS_DELAY, MESSAGES_PAGE, MAX_EXTERN_ATTACHMENT_SIZE, MAX_IMAGE_DIM, MAX_INBAND_ATTACHMENT_SIZE,
-  READ_DELAY, QUOTED_REPLY_LENGTH, VIDEO_PREVIEW_DIM } from '../config.js';
+  DRAFTY_FR_MIME_TYPE_LEGACY, KEYPRESS_DELAY, MESSAGES_PAGE, MAX_EXTERN_ATTACHMENT_SIZE, MAX_IMAGE_DIM,
+  MAX_INBAND_ATTACHMENT_SIZE, READ_DELAY, QUOTED_REPLY_LENGTH, VIDEO_PREVIEW_DIM } from '../config.js';
 import { CALL_STATE_OUTGOING_INITATED, CALL_STATE_IN_PROGRESS } from '../constants.js';
 import { blobToBase64, fileToBase64, imageScaled, makeImageUrl } from '../lib/blob-helpers.js';
 import HashNavigation from '../lib/navigation.js';
@@ -75,7 +76,12 @@ const messages = defineMessages({
     id: 'drag_file',
     defaultMessage: 'Drag file here',
     description: 'Prompt on the file drag-n-drop overlay banner'
-  }
+  },
+  self_topic_name: {
+    id: 'self_topic_name',
+    defaultMessage: 'Saved messages',
+    description: 'Name of self topic for UI'
+  },
 });
 
 // Checks if the access permissions are granted but not yet accepted.
@@ -124,6 +130,7 @@ class MessagesView extends React.Component {
     this.handleDescChange = this.handleDescChange.bind(this);
     this.handleSubsUpdated = this.handleSubsUpdated.bind(this);
     this.handleMessageUpdate = this.handleMessageUpdate.bind(this);
+    this.handleAuxUpdate = this.handleAuxUpdate.bind(this);
     this.handleAllMessagesReceived = this.handleAllMessagesReceived.bind(this);
     this.handleInfoReceipt = this.handleInfoReceipt.bind(this);
     this.handleExpandMedia = this.handleExpandMedia.bind(this);
@@ -145,6 +152,7 @@ class MessagesView extends React.Component {
     this.handleEditMessage = this.handleEditMessage.bind(this);
     this.handleCancelReply = this.handleCancelReply.bind(this);
     this.handleQuoteClick = this.handleQuoteClick.bind(this);
+    this.handleUnpinMessage = this.handleUnpinMessage.bind(this);
     this.handleCallHangup = this.handleCallHangup.bind(this);
 
     this.isDragEnabled = this.isDragEnabled.bind(this);
@@ -154,8 +162,9 @@ class MessagesView extends React.Component {
     this.handleDrag = this.handleDrag.bind(this);
     this.handleDrop = this.handleDrop.bind(this);
 
-    this.chatMessageRefs = {};
+    this.chatMessageRefs = [];
     this.getOrCreateMessageRef = this.getOrCreateMessageRef.bind(this);
+    this.getVisibleMessageRange = this.getVisibleMessageRange.bind(this);
 
     // Keeps track of the drag event.
     // Need a counter b/c the browser's 'drag' events may fire multiple times
@@ -171,12 +180,34 @@ class MessagesView extends React.Component {
   }
 
   getOrCreateMessageRef(seqId) {
-    if (this.chatMessageRefs.hasOwnProperty(seqId)) {
+    if (this.chatMessageRefs[seqId]) {
       return this.chatMessageRefs[seqId];
     }
     const ref = React.createRef();
     this.chatMessageRefs[seqId] = ref;
     return ref;
+  }
+
+  getVisibleMessageRange(holderRect) {
+    let min = Number.MAX_SAFE_INTEGER, max = -1;
+    let visibilityStatus = false;
+    this.chatMessageRefs.every((ref, seq) => {
+      if (ref.current) {
+        const { top, bottom, height } = ref.current.getBoundingClientRect();
+        const visible = top <= holderRect.top ? holderRect.top - top <= height : bottom - holderRect.bottom <= height;
+        if (visible) {
+          visibilityStatus = true;
+          min = Math.min(min, seq);
+          max = Math.max(max, seq);
+        } else if (visibilityStatus) {
+          // The remaining elements are no longer visible, no need to iterate them.
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return max >= min ? {min: min, max: max} : {min: 0, max: 0};
   }
 
   componentDidMount() {
@@ -249,6 +280,7 @@ class MessagesView extends React.Component {
         topic.onMetaDesc = this.handleDescChange;
         topic.onSubsUpdated = this.handleSubsUpdated;
         topic.onPres = this.handleSubsUpdated;
+        topic.onAuxUpdated = this.handleAuxUpdate;
       }
     }
 
@@ -299,6 +331,9 @@ class MessagesView extends React.Component {
         contentToEdit: null,
         showGoToLastButton: false,
         dragging: false,
+        pins: [],
+        pinsLoaded: false,
+        selectedPin: 0,
         subsVersion: 0
       };
     } else if (nextProps.topic != prevState.topic) {
@@ -318,7 +353,8 @@ class MessagesView extends React.Component {
         fetchingMessages: false,
         showGoToLastButton: false,
         contentToEdit: null,
-        dragging: false
+        dragging: false,
+        selectedPin: 0
       };
 
       if (nextProps.forwardMessage) {
@@ -347,7 +383,12 @@ class MessagesView extends React.Component {
           onlineSubs: subs
         });
 
-        if (topic.public) {
+        if (topic.isSelfType()) {
+          Object.assign(nextState, {
+            title: nextProps.intl.formatMessage(messages.self_topic_name),
+            avatar: true
+          });
+        } else if (topic.public) {
           Object.assign(nextState, {
             title: topic.public.fn,
             avatar: makeImageUrl(topic.public.photo)
@@ -373,7 +414,9 @@ class MessagesView extends React.Component {
           minSeqId: topic.minMsgSeq(),
           maxSeqId: topic.maxMsgSeq(),
           latestClearId: topic.maxClearId(),
-          channel: topic.isChannelType()
+          channel: topic.isChannelType(),
+          pins: (topic.aux('pins') || []).slice(),
+          pinsLoaded: false
         });
 
         if (nextProps.callTopic == topic.name && shouldPresentCallPanel(nextProps.callState)) {
@@ -389,7 +432,9 @@ class MessagesView extends React.Component {
           title: '',
           avatar: null,
           peerMessagingDisabled: false,
-          channel: false
+          channel: false,
+          pins: [],
+          pinsLoaded: false
         });
       }
     } else {
@@ -407,6 +452,9 @@ class MessagesView extends React.Component {
       if (nextProps.acs.isReader() != prevState.isReader) {
         nextState.isReader = !prevState.isReader;
       }
+      if (nextProps.acs.isAdmin() != prevState.isAdmin) {
+        nextState.isAdmin = !prevState.isAdmin;
+      }
       if (!nextProps.acs.isReader('given') != prevState.readingBlocked) {
         nextState.readingBlocked = !prevState.readingBlocked;
       }
@@ -419,6 +467,9 @@ class MessagesView extends React.Component {
       }
       if (prevState.isReader) {
         nextState.isReader = false;
+      }
+      if (prevState.isAdmin) {
+        nextState.isAdmin = false;
       }
       if (!prevState.readingBlocked) {
         prevState.readingBlocked = true;
@@ -449,7 +500,7 @@ class MessagesView extends React.Component {
     const newTopic = (this.props.newTopicParams && this.props.newTopicParams._topicName == this.props.topic);
     // Don't request the tags. They are useless unless the user
     // is the owner and is editing the topic.
-    let getQuery = topic.startMetaQuery().withLaterDesc().withLaterSub();
+    let getQuery = topic.startMetaQuery().withLaterDesc().withLaterSub().withAux();
     if (this.state.isReader || newTopic) {
       // Reading is either permitted or we don't know because it's a new topic. Ask for messages.
       getQuery = getQuery.withLaterData(MESSAGES_PAGE);
@@ -523,6 +574,7 @@ class MessagesView extends React.Component {
           oldTopic.onMetaDesc = undefined;
           oldTopic.onSubsUpdated = undefined;
           oldTopic.onPres = undefined;
+          oldTopic.onAuxUpdated = undefined;
         });
     }
   }
@@ -546,20 +598,26 @@ class MessagesView extends React.Component {
       showGoToLastButton: (pos > SHOW_GO_TO_LAST_DIST) && (pos < this.state.scrollPosition),
     });
 
-    if (this.state.fetchingMessages) {
+    if (this.state.fetchingMessages || this.processingScrollEvent) {
       return;
     }
 
     if (event.target.scrollTop <= FETCH_PAGE_TRIGGER) {
       const topic = this.props.tinode.getTopic(this.state.topic);
-      if (topic && topic.isSubscribed() && topic.msgHasMoreMessages()) {
-        this.setState({fetchingMessages: true}, _ => {
-          topic.getMessagesPage(MESSAGES_PAGE)
-            .catch(err => this.props.onError(err.message, 'err'))
-            .finally(_ => this.setState({fetchingMessages: false}));
-          });
+      if (topic && topic.isSubscribed()) {
+        this.processingScrollEvent = true;
+        const {min, max} = this.getVisibleMessageRange(event.target.getBoundingClientRect());
+        const gaps = topic.msgHasMoreMessages(min, max, false);
+        if (gaps.length > 0) {
+          this.setState({fetchingMessages: true}, _ => {
+            topic.getMessagesPage(MESSAGES_PAGE, gaps, min, max)
+              .catch(err => this.props.onError(err.message, 'err'))
+              .finally(_ => this.setState({fetchingMessages: false}));
+            });
+        }
       }
     }
+    this.processingScrollEvent = false;
   }
 
   /* Mount drag and drop events */
@@ -582,7 +640,12 @@ class MessagesView extends React.Component {
   }
 
   handleDescChange(desc) {
-    if (desc.public) {
+    if (Tinode.isSelfTopicName(this.props.topic)) {
+      this.setState({
+        title: this.props.intl.formatMessage(messages.self_topic_name),
+        avatar: true
+      });
+    } else if (desc.public) {
       this.setState({
         title: desc.public.fn,
         avatar: makeImageUrl(desc.public.photo)
@@ -598,6 +661,7 @@ class MessagesView extends React.Component {
       this.setState({
         isWriter: desc.acs.isWriter(),
         isReader: desc.acs.isReader(),
+        isAdmin: desc.acs.isAdmin(),
         readingBlocked: !desc.acs.isReader('given'),
         unconfirmed: isUnconfirmed(desc.acs),
       });
@@ -605,8 +669,8 @@ class MessagesView extends React.Component {
   }
 
   postReadNotification(seq) {
-    // Ignore notifications if the app is invisible.
-    if (!this.props.applicationVisible) {
+    // Ignore notifications if the app is invisible or topic is not yet available.
+    if (!this.props.applicationVisible || !this.state.topic) {
       return;
     }
 
@@ -633,7 +697,9 @@ class MessagesView extends React.Component {
           if (n.sendAt <= now) {
             // Remove expired notification from queue.
             this.readNotificationQueue.shift();
-            seq = Math.max(seq, n.seq);
+            if (n.seq == 0 || Tinode.isServerAssignedSeq(n.seq)) {
+              seq = Math.max(seq, n.seq);
+            }
           } else {
             break;
           }
@@ -643,9 +709,13 @@ class MessagesView extends React.Component {
         if (seq >= 0) {
           const topic = this.props.tinode.getTopic(this.state.topic);
           if (topic) {
-            topic.noteRead(seq);
-            if (window.electronAPI) {
-              window.electronAPI.readMsg(this.state.topic, seq);
+            try {
+              topic.noteRead(seq);
+                if (window.electronAPI) {
+                    window.electronAPI.readMsg(this.state.topic, seq);
+                }
+            } catch (err) {
+              console.error("Failed to send read notification", err);
             }
           }
         }
@@ -742,10 +812,39 @@ class MessagesView extends React.Component {
 
   handleAllMessagesReceived(count) {
     this.setState({fetchingMessages: false});
-    if (count > 0) {
-      // 0 means "latest".
-      this.postReadNotification(0);
+    if (!count) {
+      // All messages received. Nothing left to receive.
+      const topic = this.props.tinode.getTopic(this.state.topic);
+      if (topic) {
+        // Send read notification for the absolute last message.
+        this.postReadNotification(topic.seq);
+      }
+      return;
     }
+
+    // Load pinned message too (if any);
+    if (!this.state.pinsLoaded) {
+      // This needs to be guarded to avoid an infinite loop.
+      // The loop may happen if some pinned messages are deleted.
+      const topic = this.props.tinode.getTopic(this.state.topic);
+      this.setState({pinsLoaded: true}, _ => {
+        topic.getPinnedMessages();
+      });
+    } else {
+      this.setState({pinsLoaded: false});
+    }
+  }
+
+  handleAuxUpdate(aux) {
+    const pins = (aux['pins'] || []).slice();
+    let selectedPin = this.state.selectedPin;
+    if (pins.length > this.state.pins.length) {
+      // New pins added, show the latest.
+      selectedPin = 0;
+    } else if (selectedPin >= pins.length) {
+      selectedPin =  Math.max(0, pins.length - 1);
+    }
+    this.setState({pins: pins, selectedPin: selectedPin});
   }
 
   handleInfoReceipt(info) {
@@ -774,9 +873,9 @@ class MessagesView extends React.Component {
     }
 
     if (content.video) {
-      this.setState({ videoPostview: content });
+      this.setState({videoPostview: content});
     } else {
-      this.setState({ imagePostview: content });
+      this.setState({imagePostview: content});
     }
   }
 
@@ -801,7 +900,7 @@ class MessagesView extends React.Component {
           params.set(key, data.resp[key]);
         }
       }
-      ['name', 'seq'].map((key) => {
+      ['name', 'seq'].forEach(key => {
         if (data[key]) {
           params.set(key, data[key]);
         }
@@ -912,6 +1011,11 @@ class MessagesView extends React.Component {
     const maxInbandAttachmentSize = (this.props.tinode.getServerParam('maxMessageSize',
       MAX_INBAND_ATTACHMENT_SIZE) * 0.75 - 1024) | 0;
 
+    // If the attachment is a JSON file, then use 'application/octet-stream' instead of 'application/json'.
+    // This is a temporary workaround for the collision with the 'application/json' MIME type of form responses.
+    // Remove this code in 2026 or so.
+    const jsonMimeConverter = (fileType) => fileType === DRAFTY_FR_MIME_TYPE_LEGACY ? 'application/octet-stream' : fileType;
+
     if (file.size > maxInbandAttachmentSize) {
       // Too large to send inband - uploading out of band and sending as a link.
       const uploader = this.props.tinode.getLargeFileHelper();
@@ -921,7 +1025,7 @@ class MessagesView extends React.Component {
       }
       const uploadCompletionPromise = uploader.upload(file);
       const msg = Drafty.attachFile(null, {
-        mime: file.type,
+        mime: jsonMimeConverter(file.type),
         filename: file.name,
         size: file.size,
         urlPromise: uploadCompletionPromise
@@ -932,7 +1036,7 @@ class MessagesView extends React.Component {
       // Small enough to send inband.
       fileToBase64(file)
         .then(b64 => this.sendMessage(Drafty.attachFile(null, {
-          mime: b64.mime,
+          mime: jsonMimeConverter(b64.mime),
           data: b64.bits,
           filename: b64.name,
           size: file.size
@@ -1291,6 +1395,11 @@ class MessagesView extends React.Component {
     }
   }
 
+  handleUnpinMessage(seq) {
+    const topic = this.props.tinode.getTopic(this.state.topic);
+    topic.pinMessage(seq, false);
+  }
+
   isDragEnabled() {
     return this.state.isWriter && !this.state.unconfirmed && !this.props.forwardMessage && !this.state.peerMessagingDisabled;
   }
@@ -1397,6 +1506,7 @@ class MessagesView extends React.Component {
             onSendMessage={this.sendFileAttachment} />
         );
       } else if (this.state.rtcPanel) {
+        // P2P call.
         component2 = (
           <CallPanel
             topic={this.state.topic}
@@ -1430,6 +1540,9 @@ class MessagesView extends React.Component {
             icon_badges.push({icon: 'dangerous', color: 'badge-inv'});
           }
         }
+
+        const pinnedMessages = [];
+        this.state.pins.forEach(seq => pinnedMessages.push(topic.latestMsgVersion(seq) || topic.findMessage(seq)));
 
         const messageNodes = [];
         let previousFrom = null;
@@ -1492,6 +1605,7 @@ class MessagesView extends React.Component {
             messageNodes.push(
               <ChatMessage
                 tinode={this.props.tinode}
+                topic={this.state.topic}
                 content={msg.content}
                 mimeType={msg.head && msg.head.mime}
                 replyToSeq={replyToSeq}
@@ -1508,6 +1622,8 @@ class MessagesView extends React.Component {
                 received={deliveryStatus}
                 uploader={msg._uploader}
                 userIsWriter={this.state.isWriter}
+                userIsAdmin={this.state.isAdmin}
+                pinned={this.state.pins.includes(msg.seq)}
                 viewportWidth={this.props.viewportWidth}  // Used by `formatter`.
                 showContextMenu={this.handleShowMessageContextMenu}
                 onExpandMedia={this.handleExpandMedia}
@@ -1516,6 +1632,7 @@ class MessagesView extends React.Component {
                 pickReply={this.handlePickReply}
                 editMessage={this.handleEditMessage}
                 onQuoteClick={this.handleQuoteClick}
+                onAcceptCall={this.props.onAcceptCall}
                 onError={this.props.onError}
                 ref={ref}
                 key={msg.seq} />
@@ -1539,7 +1656,7 @@ class MessagesView extends React.Component {
           }
         }
         const avatar = this.state.avatar || true;
-        const online = this.state.deleted ? null :
+        const online = this.state.deleted || topic.isSelfType() ? null :
           this.props.online ? 'online' + (this.state.typingIndicator ? ' typing' : '') : 'offline';
 
         const titleClass = 'panel-title' + (this.state.deleted ? ' deleted' : '');
@@ -1547,7 +1664,7 @@ class MessagesView extends React.Component {
         let messagesComponent = (
           <>
             <div id="messages-container">
-              <button className={'action-button' + (this.state.showGoToLastButton ? '' : ' hidden')}
+              <button id="go-to-latest" className={'action-button' + (this.state.showGoToLastButton ? '' : ' hidden')}
                 onClick={this.goToLatestMessage}>
                 <i className="material-icons">arrow_downward</i>
               </button>
@@ -1623,11 +1740,23 @@ class MessagesView extends React.Component {
                 }<ContactBadges badges={icon_badges} /></div>
                 <div id="topic-last-seen">{lastSeen}</div>
               </div>
+              <div style={{marginLeft: 'auto'}}/>
+              {!this.props.displayMobile && this.state.pins.length > 0 ?
+                <PinnedMessages
+                  tinode={this.props.tinode}
+                  pins={this.state.pins}
+                  messages={pinnedMessages}
+                  selected={this.state.selectedPin}
+                  isAdmin={this.state.isAdmin}
+                  setSelected={index => this.setState({selectedPin: index})}
+                  onSelected={this.handleQuoteClick}
+                  onCancel={this.handleUnpinMessage} />
+                : null}
               {groupTopic ?
                 <GroupSubs
                   tinode={this.props.tinode}
                   subscribers={this.state.onlineSubs} /> :
-                <div id="topic-users" />
+                null
               }
               <div>
                 <a href="#" onClick={this.handleContextClick}>
@@ -1636,10 +1765,24 @@ class MessagesView extends React.Component {
               </div>
             </div>
             {this.props.displayMobile ?
-              <ErrorPanel
-                level={this.props.errorLevel}
-                text={this.props.errorText}
-                onClearError={this.props.onError} />
+              <>
+                {this.state.pins.length > 0 ?
+                  <PinnedMessages
+                    tinode={this.props.tinode}
+                    pins={this.state.pins}
+                    messages={pinnedMessages}
+                    selected={this.state.selectedPin}
+                    isAdmin={this.state.isAdmin}
+                    setSelected={index => this.setState({selectedPin: index})}
+                    onSelected={this.handleQuoteClick}
+                    onCancel={this.handleUnpinMessage} />
+                    : null
+                }
+                <ErrorPanel
+                  level={this.props.errorLevel}
+                  text={this.props.errorText}
+                  onClearError={this.props.onError} />
+              </>
               : null}
             <LoadSpinner show={this.state.fetchingMessages} />
             {messagesComponent}

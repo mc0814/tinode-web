@@ -68,10 +68,18 @@ label.large {
   font-size: 1.1rem;
 }
 
+label.invalid {
+  color: #D32F2F;
+}
+
 img.avatar {
   width: 100%;
   height: 100%;
   border-radius: 50%;
+}
+
+img.avatar.self {
+  padding: 7%;
 }
 
 /* Input fields and buttons */
@@ -238,20 +246,21 @@ textarea::placeholder {
   font-weight: lighter;
 }
 
-input[type="text"].with-visibility,
-input[type="password"].with-visibility {
+input[type="text"].with-icon-right,
+input[type="password"].with-icon-right {
   margin-right:-2rem;
   padding-right:2rem;
+}
+
+input[type="text"].with-icon-left,
+input[type="password"].with-icon-left {
+  margin-left:-1.45rem;
+  padding-left:1.75rem;
 }
 
 textarea {
   resize: none;
   padding-top: 0.45rem;
-}
-
-textarea.inplace-edit {
-  height: unset;
-  font-size: unset;
 }
 
 /* END of input and buttons */
@@ -309,10 +318,14 @@ ul.menu > li.separator:hover {
   background-color: #ccc;
 }
 
+ul.menu > li.disabled {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
 /* The down arrow head - trigger for context menu */
-li .menuTrigger {
+.menuTrigger {
   position: absolute;
-  top: 0.25rem;
   right: 0.25rem;
   width: 1.4rem;
   height: 1.4rem;
@@ -321,6 +334,13 @@ li .menuTrigger {
   text-align: center;
   opacity: 0;
   background-color: inherit;
+}
+.menuTrigger a {
+  color: #757575;
+}
+
+li .menuTrigger {
+  top: 0.25rem;
 }
 li:hover .menuTrigger {
   opacity: 0.9;
@@ -511,8 +531,6 @@ div.trusted-badge {
   color: #999;
   font-size: 1.8rem;
   background-color: #fafafa;
-  right: 1rem;
-  bottom: 1rem;
   border-radius: 50%;
   width: 3.25rem;
   height: 3.25rem;
@@ -621,6 +639,7 @@ div.trusted-badge {
 }
 
 #info-view {
+  position: relative;
   display: flex;
   flex-direction: column;
   flex-grow: 0;
@@ -666,7 +685,7 @@ div.trusted-badge {
 }
 
 /* BEGIN InPlaceEdit styles */
-.in-place-edit {
+span.in-place-edit, div.in-place-edit {
   display: inline-block;
   font-family: inherit;
   font-size: 1rem;
@@ -678,9 +697,12 @@ div.trusted-badge {
 }
 
 .in-place-edit.short {
+  display: inline-flex;
+  align-items: center;
   font-size: 1.1rem;
   height: 2.5rem;
   line-height: 2.25;
+  white-space: nowrap;
 }
 
 .in-place-edit.disabled {
@@ -698,11 +720,29 @@ div.trusted-badge {
 }
 
 .in-place-edit.short span {
-  display: block;
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow-x: hidden;
+  width: 100%;
 }
+
+.in-place-edit .material-icons {
+  display: inline-block;
+}
+
+.material-icons.invalid {
+  color: #c66;
+}
+
+textarea.in-place-edit {
+  height: unset;
+  font-size: unset;
+}
+
+input.in-place-edit.invalid {
+  color: #c66;
+}
+
 /* END of InPlaceEdit styles */
 
 table.permission-editor {
@@ -815,6 +855,7 @@ table.permission-editor td.checkbox {
 .bot-form button:hover,
 .bot-form button:active {
   outline: 0;
+  color: #1565C0;
   background-color: #e3f2fd;
 }
 
@@ -1387,6 +1428,7 @@ img.channel {
 #topic-users {
   margin-left: auto;
   margin-right: 1rem;
+  width: min-content;
 }
 
 #topic-users .avatar-box {
@@ -1579,6 +1621,7 @@ img.channel {
   background-color: rgba(255,255,255,0.90);
 }
 
+
 #image-preview-caption-panel {
   display: flex;
   justify-content: space-between;
@@ -1606,6 +1649,7 @@ img.channel {
   justify-content: space-around;
   align-items: center;
   overflow: hidden;
+  background-color: #777;
   width: 100%;
   height: 100%;
 }
@@ -1624,6 +1668,15 @@ img.channel {
 
 #image-preview-container .material-icons {
   font-size: 6rem;
+}
+
+#image-preview-container .doc-card {
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  background-color: #ccc;
+  padding: 1rem;
+  border-radius: 0.5rem;
 }
 
 /* Video-call related styles */
@@ -1746,11 +1799,15 @@ video {
 
 /* Badge with "You" for current user or peer's name. */
 .call-party .caller-name {
+  max-width: 12rem;
   padding: 0.15rem 0.5rem;
   border-radius: 0.35rem;
   z-index: 1;
   text-shadow: 0 0 1px white;
   background-color: rgba(255, 255, 255, 0.7);
+  text-overflow: ellipsis;
+  overflow-x: hidden;
+  white-space: nowrap;
 }
 
 .call-party.self .caller-name.inactive {
@@ -1817,6 +1874,10 @@ video {
   font-weight: lighter;
 }
 
+#go-to-latest {
+  right: 1.5rem;
+  bottom: 1rem;
+}
 
 @keyframes active-call {
   0% {
@@ -2007,6 +2068,24 @@ video {
   padding: 0 0.75rem 0 0.75rem;
 }
 
+/* Increase font size when the message contains only emojis.
+Font from 3x to almost normal, from 1 to 5 emojis in a message */
+.bubble div.message-content.emoji-1 {
+  font-size: 300%;
+}
+.bubble div.message-content.emoji-2 {
+  font-size: 241%;
+}
+.bubble div.message-content.emoji-3 {
+  font-size: 193%;
+}
+.bubble div.message-content.emoji-4 {
+  font-size: 155%;
+}
+.bubble div.message-content.emoji-5 {
+  font-size: 125%;
+}
+
 /* The timestamp is a floating element. Need to ensure div.message-content is expanded
  * to accomodate it. It's usually called clearfix. */
 .bubble div.message-content:after {
@@ -2039,6 +2118,10 @@ video {
 .chat-box .author {
   font-size: 80%;
   color:#777;
+  max-width: 12em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-x: hidden;
 }
 
 /* Inline and preview image styles */
@@ -2572,7 +2655,7 @@ ul.tabbar li.active > a {
 .material-icons.big {
   font-size: 2.2rem;
 }
-.material-icons.bigger {
+.material-icons.x-big {
   font-size: 3rem;
 }
 .material-icons.huge {
@@ -2582,12 +2665,25 @@ ul.tabbar li.active > a {
   display: inline-block;
   position: relative;
 }
-.composed-material i:nth-child(2) {
+.composed-material .second {
   position: absolute;
   font-size: 85%;
   top: 7%;
   left: 39%;
   font-weight: bold;
+}
+.composed-material .second-small {
+  position: absolute;
+  font-size: 62%;
+  top: 14%;
+  left: 30%;
+  font-weight: bold;
+}
+
+/* White outline */
+.material-icons.outline {
+  position: relative;
+  text-shadow: -1px 1px #FFF, 1px 1px #FFF, 1px -1px #FFF, -1px -1px #FFF;
 }
 
 #self-avatar .material-icons {
@@ -3029,6 +3125,101 @@ ul.tabbar li.active > a {
   color: #666C;
 }
 
+/* Pinned messages */
+#pinned-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 100%;
+  margin-right: 0.5rem;
+}
+
+.pinned {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem 0.25rem 0.5rem;
+  background-color: #fafafa;
+  background-position: center;
+  font-weight: lighter;
+  border-radius: 0 0.25rem 0.25rem 0;
+  color: #666;
+  height: 100%;
+  width: 24rem;
+  min-width: 0;
+  cursor: pointer;
+  transition: background 0.4s;
+}
+
+.pinned > p {
+  overflow-x: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pinned:hover {
+  background-color: #fafdff;
+}
+
+.pinned:active {
+  background-color: #d8e8ff;
+  transition: background 0s;
+}
+
+.pinned-scroll {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 0.25rem 0 0 0.25rem;
+  background-color: #eeee;
+  justify-content: space-evenly;
+  height: 100%;
+  padding: 0.2rem;
+  margin-left: 0.35rem;
+  user-select: none;
+}
+
+.pinned-scroll .dot {
+  width: 0.3rem;
+  height: 0.3rem;
+  border-radius: 50%;
+  background-color: #999;
+  user-select: none;
+}
+
+.pinned-scroll .adot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background-color: #039be5;
+  user-select: none;
+}
+
+#pinned-wrapper:hover .menuTrigger {
+  opacity: 0.9;
+}
+#pinned-wrapper:hover .menuTrigger a {
+  color: #757575;
+}
+
+.pinned-menu {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background-color: #f8f8f8;
+  border-radius: 0 0.25rem 0.25rem 0;
+  justify-content: space-evenly;
+  top: 0;
+  bottom: 0;
+  right: 0;
+}
+
+.pinned-menu .menuTrigger {
+  position: relative;
+  user-select: none;
+}
+
 /*
  Drag-and-drop area.
  */
@@ -3099,6 +3290,53 @@ ul.phone-country-selector span.country {
   overflow-x: hidden;
 }
 
+div.toast {
+  visibility: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  min-width: 10rem;
+  padding: 0.5rem 1rem;
+  height: 3rem;
+  z-index: 3;
+  font-weight: lighter;
+  color: #eee;
+  background-color: #333;
+  border-radius: 0.5rem;
+  box-shadow: 1px 2px 0.3rem gray;
+  bottom: 2rem;
+  left: 50%;
+  translate: -50%;
+}
+
+div.toast.show {
+  visibility: visible;
+  animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@keyframes fadein {
+  from {
+    bottom: 0;
+    opacity: 0;
+  }
+  to {
+    bottom: 2rem;
+    opacity: 1;
+  }
+}
+
+@keyframes fadeout {
+  from {
+    bottom: 2rem;
+    opacity: 1;
+  }
+  to {
+    bottom: 0;
+    opacity: 0;
+  }
+}
+
 /*
  Very wide monitor.
  */
@@ -3115,6 +3353,10 @@ ul.phone-country-selector span.country {
 @media (max-width: 960px) {
   #mountPoint {
     padding: 0;
+  }
+
+  .pinned {
+    width: 16rem;
   }
 }
 
@@ -3133,7 +3375,7 @@ ul.phone-country-selector span.country {
     width: 100%;
   }
 
-  /* Bottom sheet rathar than a dialog */
+  /* Bottom sheet rather than a dialog */
   .forward-dialog {
     border-radius: 0.3rem 0.3rem 0 0;
     margin: auto 0 0 0;
@@ -3141,12 +3383,25 @@ ul.phone-country-selector span.country {
   }
 
   /* Must make it a bit visible on mobile because there is no :hover */
-  li .menuTrigger {
+  .menuTrigger {
     opacity: 0.3;
   }
 
   #send-message-input {
     /* Just an indicator that the screen is in mobile mode */
     transition-property: -tinode-mobile;
+  }
+
+  #pinned-wrapper {
+    height: 3.5rem;
+    margin: 0.25rem;
+  }
+
+  .pinned {
+    width: unset;
+  }
+
+  .call-party.self {
+    bottom: 8.5rem;
   }
 }

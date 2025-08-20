@@ -19,9 +19,10 @@
     "vers": "node scripts/gen-version.js",
     "extract": "formatjs extract \"src/**/*.{js,jsx}\" --out-file src/i18n/ex/base-en.json --id-interpolation-pattern '[sha512:contenthash:base64:6]'",
     "compile": "formatjs compile",
+    "test": "jest",
     "electron-start": "electron ."
   },
-  "browserslist": "> 0.5%, not IE 11, not op_mini all, not and_uc >0",
+  "browserslist": "> 0.5%, last 2 versions, Firefox ESR, not dead",
   "files": [
     "umd/*.js",
     "umd/*.map",
@@ -47,13 +48,17 @@
     "web"
   ],
   "locales": [
+    "ar",
     "de",
     "en",
     "es",
     "fr",
+    "it",
     "ko",
     "ro",
     "ru",
+    "th",
+    "uk",
     "zh",
     "zh-TW"
   ],
@@ -66,13 +71,13 @@
   "author": "Tinode Authors <info@tinode.co>",
   "license": "Apache-2.0",
   "dependencies": {
-    "firebase": "^10.1.0",
+    "firebase": "^11.0.0",
     "libphonenumber-js": "^1.10.40",
     "qrcodejs": "^1.0.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-intl": "^6.4.4",
-    "tinode-sdk": "^0.22.12",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "react-intl": "^7.0.0",
+    "tinode-sdk": "^0.24.4",
     "webm-duration-fix": "^1.0.4"
   },
   "devDependencies": {
@@ -80,17 +85,18 @@
     "@babel/preset-env": "^7.22.10",
     "@babel/preset-react": "^7.22.5",
     "@formatjs/cli": "^6.1.3",
-    "babel-loader": "^9.1.3",
+    "babel-loader": "^10.0.0",
     "babel-plugin-formatjs": "^10.5.3",
     "browserslist": "^4.21.10",
-    "copy-webpack-plugin": "^11.0.0",
-    "cssnano": "^6.0.1",
+    "copy-webpack-plugin": "^13.0.0",
+    "cssnano": "^7.0.6",
     "electron": "^29.2.0",
-    "glob": "^10.3.3",
+    "glob": "^11.0.0",
+    "jest": "^30.0.0",
     "postcss": "^8.4.27",
-    "postcss-cli": "^10.1.0",
+    "postcss-cli": "^11.0.0",
     "react-scripts": "^5.0.1",
     "webpack": "^5.88.2",
-    "webpack-cli": "^5.1.4"
+    "webpack-cli": "^6.0.0"
   }
 }

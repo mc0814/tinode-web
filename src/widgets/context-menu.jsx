@@ -116,6 +116,16 @@ const messages = defineMessages({
     defaultMessage: 'Are you sure you want to clear all messages? It cannot be undone.',
     description: 'Alert dialog warning when deleting all messages.'
   },
+  pin_message: {
+    id: 'pin_message',
+    defaultMessage: 'Pin',
+    description: 'Menu item [Pin] for pinning message to the top.'
+  },
+  unpin_message: {
+    id: 'unpin_message',
+    defaultMessage: 'Unpin',
+    description: 'Menu item [Unpin] for un-pinning the message.'
+  },
 });
 
 class ContextMenu extends React.Component {
@@ -179,6 +189,14 @@ class ContextMenu extends React.Component {
           return this.deleteMessages(false, true, params, errorHandler);
         }
       },
+      // Hard-delete but with just 'Delete' title.
+      'message_delete_generic': {
+        id: 'message_delete_generic',
+        title: formatMessage(messages.delete),
+        handler: (params, errorHandler) => {
+          return this.deleteMessages(false, true, params, errorHandler);
+        }
+      },
       'menu_item_send_retry': {
         id: 'menu_item_send_retry',
         title: formatMessage(messages.send_retry),
@@ -203,6 +221,20 @@ class ContextMenu extends React.Component {
         title: formatMessage(messages.edit),
         handler: (params, errorHandler) => {
           return this.editMessage(params, errorHandler);
+        }
+      },
+      'menu_item_pin': {
+        id: 'menu_item_pin',
+        title: formatMessage(messages.pin_message),
+        handler: (params, errorHandler) => {
+          return this.pinMessage(true, params, errorHandler);
+        }
+      },
+      'menu_item_unpin': {
+        id: 'menu_item_unpin',
+        title: formatMessage(messages.unpin_message),
+        handler: (params, errorHandler) => {
+          return this.pinMessage(false, params, errorHandler);
         }
       },
       'topic_unmute': {
@@ -428,6 +460,16 @@ class ContextMenu extends React.Component {
     });
   }
 
+  // Pin or unpin the message.
+  pinMessage(pin, params, errorHandler) {
+    const topic = this.props.tinode.getTopic(params.topicName);
+    if (!topic) {
+      return;
+    }
+    topic.pinMessage(params.seq, pin)
+      .catch(err => errorHandler ? errorHandler(err.message, 'err') : null);
+  }
+
   // Function is used by context menu to set permissions.
   topicPermissionSetter(mode, params, errorHandler) {
     const topic = this.props.tinode.getTopic(params.topicName);
@@ -454,16 +496,17 @@ class ContextMenu extends React.Component {
   render() {
     const menu = [];
     let count = 0;
-    this.props.items.map((item) => {
+    this.props.items.forEach(item => {
       if (typeof item == 'string') {
         item = this.MenuItems[item];
       }
       if (item && item.title) {
+        const className = item.disabled ? 'disabled' : undefined;
         menu.push(
           item.title == '-' ?
             <li className="separator" key={count} />
             :
-            <li onClick={this.handleClick} data-id={count} key={count}>{item.title}</li>
+            <li className={className} onClick={this.handleClick} data-id={count} key={count}>{item.title}</li>
         );
       }
       count++;

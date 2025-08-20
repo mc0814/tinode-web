@@ -89,7 +89,7 @@ export function arrayEqual(a, b) {
 export function asPhone(val) {
   val = val.trim();
   if (/^(?:\+?(\d{1,3}))?[- (.]*(\d{3})[- ).]*(\d{3})[- .]*(\d{2})[- .]*(\d{2})?$/.test(val)) {
-    return val.replace(/[- ().]*/, '');
+    return val.replaceAll(/[- ().]*/g, '');
   }
   return null;
 }
@@ -97,7 +97,7 @@ export function asPhone(val) {
 // Checks (loosely) if the given string is an email. If so returns the email.
 export function asEmail(val) {
   val = val.trim();
-  if (/^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(val)) {
+  if (/^[a-z0-9_.+-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/i.test(val)) {
     return val;
   }
   return null;
@@ -164,7 +164,7 @@ export function sanitizeUrlForMime(url, mimeMajor) {
   }
 
   // Is this a data: URL of the appropriate mime type?
-  const re = new RegExp(`data:${mimeMajor}\/[a-z0-9.-]+;base64,`, 'i');
+  const re = new RegExp(`data:${mimeMajor}\/[-+.a-z0-9]+;base64,`, 'i');
   if (re.test(url.trim())) {
     return url;
   }
@@ -174,7 +174,7 @@ export function sanitizeUrlForMime(url, mimeMajor) {
 
 // Append query parameter 'asatt=1' to the URL.
 // It will cause Tinode server to add 'Content-Disposition: attachment' header when serving it.
-// The URL here is always absolute.
+// The URL is a string. The URL here is always absolute.
 export function urlAsAttachment(url) {
   // TODO: check if URL is local or remote, i.e. compare to window.location.origin.
   /*
@@ -184,6 +184,11 @@ export function urlAsAttachment(url) {
     }
   }
   */
+  // Check if the URL is a data or blob. Do not alter such URLs.
+  if (url.startsWith('data:') || url.startsWith('blob:')) {
+    return url;
+  }
+
   // Split URL into host+path, query, fragment.
   let query = '', fragment = '';
   const idxF = url.indexOf('#');

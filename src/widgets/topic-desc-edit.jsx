@@ -1,7 +1,7 @@
 // Widget for editing topic description.
 
 import React from 'react';
-import { FormattedMessage } from 'react-intl';
+import { defineMessages, FormattedMessage, injectIntl } from 'react-intl';
 
 import { Tinode } from 'tinode-sdk';
 
@@ -15,25 +15,57 @@ import { AVATAR_SIZE, MAX_AVATAR_BYTES, MAX_EXTERN_ATTACHMENT_SIZE, MAX_TITLE_LE
 import { imageScaled, blobToBase64, makeImageUrl } from '../lib/blob-helpers.js';
 import { arrayEqual, theCard } from '../lib/utils.js';
 
-export default class TopicDescEdit extends React.Component {
+const messages = defineMessages({
+  alias_invalid: {
+    id: 'alias_invalid',
+    defaultMessage: '(invalid)',
+    description: 'Error message for invalid alias'
+  },
+  alias_already_taken: {
+    id: 'alias_already_taken',
+    defaultMessage: '(already taken)',
+    description: 'Error message for alias already taken'
+  },
+  self_topic_name: {
+    id: 'self_topic_name',
+    defaultMessage: 'Saved messages',
+    description: 'Name of self topic for UI'
+  },
+  self_topic_comment: {
+    id: 'self_topic_comment',
+    defaultMessage: 'Notes, messages, links, files saved for posterity',
+    description: 'Comment for self topic for UI'
+  }
+});
+
+const ALIAS_AVAILABILITY_CHECK_DELAY = 1000; // milliseconds
+
+class TopicDescEdit extends React.Component {
   constructor(props) {
     super(props);
 
     const topic = this.props.tinode.getTopic(this.props.topic);
     const acs = topic.getAccessMode();
+    const isSelf = Tinode.isSelfTopicName(this.props.topic);
     this.state = {
       isMe: Tinode.isMeTopicName(this.props.topic),
+      isSelf: isSelf,
       owner: acs && acs.isOwner(),
-      fullName: topic.public ? topic.public.fn : undefined,
+      fullName: topic.public ? topic.public.fn :
+        isSelf ? this.props.intl.formatMessage(messages.self_topic_name) : null,
       private: topic.private ? topic.private.comment : null,
-      description: topic.public ? topic.public.note : undefined,
+      description: topic.public ? topic.public.note :
+        isSelf ? this.props.intl.formatMessage(messages.self_topic_comment) : null,
       avatar: makeImageUrl(topic.public ? topic.public.photo : null),
       tags: topic.tags() || [],
       newAvatar: null,
-      newAvatarMime: null
+      newAvatarMime: null,
+      aliasError: ''
     };
 
     this.previousOnTags = null;
+    this.aliasCheckTimer = null;
+    this.aliasCheckPromise = null;
 
     this.tnNewTags = this.tnNewTags.bind(this);
     this.handleFullNameUpdate = this.handleFullNameUpdate.bind(this);
@@ -42,8 +74,11 @@ export default class TopicDescEdit extends React.Component {
     this.handleAvatarCropCancel = this.handleAvatarCropCancel.bind(this);
     this.uploadAvatar = this.uploadAvatar.bind(this);
     this.handlePrivateUpdate = this.handlePrivateUpdate.bind(this);
+    this.handleAliasUpdate = this.handleAliasUpdate.bind(this);
     this.handleDescriptionUpdate = this.handleDescriptionUpdate.bind(this);
     this.handleTagsUpdated = this.handleTagsUpdated.bind(this);
+    this.validateAlias = this.validateAlias.bind(this);
+    this.cancelValidator = this.cancelValidator.bind(this);
   }
 
   componentDidMount() {
@@ -55,6 +90,7 @@ export default class TopicDescEdit extends React.Component {
   componentWillUnmount() {
     const topic = this.props.tinode.getTopic(this.props.topic);
     topic.onTagsUpdated = this.previousOnTags;
+    this.cancelValidator();
   }
 
   tnNewTags(tags) {
@@ -141,6 +177,67 @@ export default class TopicDescEdit extends React.Component {
     this.setState({newAvatar: null, newAvatarMime: null});
   }
 
+  handleAliasUpdate(alias) {
+    alias = (alias || '').trim();
+    const tags = alias ?
+      Tinode.setUniqueTag(this.state.tags, Tinode.TAG_ALIAS + alias.toLowerCase()) :
+      Tinode.clearTagPrefix(this.state.tags, Tinode.TAG_ALIAS);
+    this.handleTagsUpdated(tags);
+  }
+
+  validateAlias(alias) {
+    // Reset pending delayed check.
+    this.cancelValidator();
+
+    alias = alias.trim();
+    if (!alias) {
+      this.setState({aliasError: ''});
+      return true;
+    }
+
+    const valid = Tinode.isValidTagValue(alias);
+    if (!valid) {
+      this.setState({aliasError: this.props.intl.formatMessage(messages.alias_invalid)});
+      return false;
+    }
+    this.setState({aliasError: ''});
+
+    // Setup a delayed check for alias availability.
+    const fnd = this.props.tinode.getFndTopic();
+    if (!fnd) {
+      // Unable to check alias availability.
+      this.setState({aliasError: ''});
+      return true;
+    }
+    this.aliasCheckPromise = {};
+    const validationPromise = new Promise((resolve, reject) => {
+      this.aliasCheckPromise.resolve = resolve;
+      this.aliasCheckPromise.reject = reject;
+    });
+    this.aliasCheckTimer = setTimeout(_ => {
+      this.aliasCheckTimer = null;
+      fnd.checkTagUniqueness(`${Tinode.TAG_ALIAS}${alias}`, this.props.topic)
+        .then(ok => {
+          this.aliasCheckPromise.resolve(ok)
+          this.setState({aliasError: ok ? '' : this.props.intl.formatMessage(messages.alias_already_taken)});
+        })
+        .catch(err => {
+          this.aliasCheckPromise.reject(err);
+          this.setState({aliasError: err.message});
+        });
+    }, ALIAS_AVAILABILITY_CHECK_DELAY);
+    return validationPromise;
+  }
+
+  cancelValidator() {
+    // Reset pending delayed check.
+    if (this.aliasCheckTimer) {
+      clearTimeout(this.aliasCheckTimer);
+      this.aliasCheckTimer = null;
+      this.aliasCheckPromise.reject(null);
+    }
+  }
+
   handleTagsUpdated(tags) {
     // Check if tags have actually changed.
     if (arrayEqual(this.state.tags.slice(0), tags.slice(0))) {
@@ -161,7 +258,12 @@ export default class TopicDescEdit extends React.Component {
       );
     }
 
-    const editable = this.state.isMe || this.state.owner;
+    const editable = this.state.isMe || (this.state.owner && !this.state.isSelf);
+    let alias = this.state.tags && this.state.tags.find(t => t.startsWith('alias:'));
+    if (alias) {
+      // Remove 'alias:' prefix.
+      alias = alias.substring(6);
+    }
 
     return (
       <>
@@ -208,6 +310,7 @@ export default class TopicDescEdit extends React.Component {
                     readOnly={!editable}
                     value={this.state.fullName}
                     required={true}
+                    maxLength={32}
                     onFinished={this.handleFullNameUpdate} />
                 }</FormattedMessage>
               </div>
@@ -231,6 +334,30 @@ export default class TopicDescEdit extends React.Component {
             </div>
           </>
         }
+        {editable || alias ?
+          <div className="group">
+            <div><label className={'small ' + (this.state.aliasError ? 'invalid' : '')}>
+              <FormattedMessage id="label_alias_edit" defaultMessage="Alias"
+                description="Label for editing user or topic alias" /> {this.state.aliasError}
+            </label></div>
+            <div>
+              <FormattedMessage id="alias_editing_placeholder"
+                defaultMessage="Alias (optional)"
+                description="Placeholder for editing user or topic alias">{
+                (private_placeholder) => <InPlaceEdit
+                  placeholder={private_placeholder}
+                  readOnly={!editable}
+                  value={alias}
+                  validator={this.validateAlias}
+                  iconLeft='alternate_email'
+                  maxLength={24}
+                  spellCheck={false}
+                  onFinished={this.handleAliasUpdate} />
+              }</FormattedMessage>
+            </div>
+          </div>
+          : null
+        }
         {editable || this.state.description ?
           <div className="group">
             <div><label className="small">
@@ -253,7 +380,7 @@ export default class TopicDescEdit extends React.Component {
           : null
         }
       </div>
-      {editable ?
+      {editable && !this.state.isMe ?
         <>
           <div className="hr" />
           <FormattedMessage id="title_tag_manager" defaultMessage="Tags (search & discovery)"
@@ -272,3 +399,5 @@ export default class TopicDescEdit extends React.Component {
     );
   }
 };
+
+export default injectIntl(TopicDescEdit);

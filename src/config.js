@@ -1,7 +1,7 @@
 import { PACKAGE_VERSION } from './version.js';
 
 // Name of this application, used in the User-Agent.
-export const APP_NAME = 'TinodeWeb/' + (PACKAGE_VERSION || '0.21');
+export const APP_NAME = 'TinodeWeb/' + (PACKAGE_VERSION || '0.24');
 
 // API key. Use https://github.com/tinode/chat/tree/master/keygen to generate your own
 export const API_KEY = 'AQEAAAABAAD_rAp4DJh05a1HAwFT3A6K';
@@ -96,7 +96,7 @@ export const MAX_TITLE_LENGTH = 60;
 // Maximum length of topic description.
 export const MAX_TOPIC_DESCRIPTION_LENGTH = 360;
 // Maximum length of user name when displaying a video call.
-export const MAX_PEER_TITLE_LENGTH = 20;
+export const MAX_PEER_TITLE_LENGTH = 24;
 
 // Length of message previews in chat list, in characters.
 export const MESSAGE_PREVIEW_LENGTH = 80;
@@ -132,3 +132,22 @@ export const CLICKABLE_URL_SCHEMES = ['http', 'https', 'ftp', 'ftps'];
 
 // Size of the QR code in the app.
 export const QRCODE_SIZE = 128;
+
+// How much time has to pass to consider computer awoken from sleep (80 sec).
+// Chrome throttles ticker events in inactive tabs to once per minute. This
+// value ensures that these once-a-minute events do not trigger a reconnect.
+export const WAKE_UP_TIMEOUT = 80000;
+// Timer interval between checks if computer woke up from sleep (1 sec).
+export const WAKE_UP_TICK = 1000;
+
+// Swipe distance to register as a gesture, in pixels.
+export const MIN_SWIPE_DISTANCE = REM_SIZE * 3;
+
+// Self-topic avatar as an SVG icon encoded as data URI
+export const SELF_AVATAR_URI = 'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz48c3ZnIHZpZXdCb3g9IjAgMCAxNyAxNyIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMy41NjIgMXYxNS40NTlsNC42ODYtMy4yNyA0Ljc1MiAzLjI2di0xNS40NDloLTkuNDM4ek0xMiAxNC41NTFsLTMuNzU2LTIuNTc4LTMuNjgxIDIuNTY4di0xMi41NDFoNy40Mzd2MTIuNTUxeiIgZmlsbD0iIzU1NTU1NSIgLz48L3N2Zz4=' // eslint-disable-line max-len
+
+// Toast display duration, milliseconds.
+export const TOAST_DURATION = 3_000;
+
+// MIME type for the legacy Drafty form-response data.
+export const DRAFTY_FR_MIME_TYPE_LEGACY = 'application/json'; // Remove in 2026.

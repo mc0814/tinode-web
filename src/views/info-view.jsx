@@ -16,7 +16,8 @@ import ShowQRCode from '../widgets/show-qrcode.jsx';
 import TopicCommonView from './topic-common-view.jsx';
 import TopicSecurity from '../widgets/topic-security.jsx';
 
-import { MAX_TITLE_LENGTH, MAX_TOPIC_DESCRIPTION_LENGTH, NO_ACCESS_MODE } from '../config.js';
+import { MAX_TITLE_LENGTH, MAX_TOPIC_DESCRIPTION_LENGTH,
+  NO_ACCESS_MODE, TOAST_DURATION } from '../config.js';
 
 import { makeImageUrl } from '../lib/blob-helpers.js';
 import { theCard, clipStr } from '../lib/utils.js';
@@ -82,6 +83,21 @@ const messages = defineMessages({
     defaultMessage: 'Scan QR Code',
     description: 'Title for scanning QR code'
   },
+  text_copied: {
+    id: 'text_copied',
+    defaultMessage: 'Copied to clipboard',
+    description: 'Notification that text has been copied to clipboard'
+  },
+  self_topic_name: {
+    id: 'self_topic_name',
+    defaultMessage: 'Saved messages',
+    description: 'Name of self topic for UI',
+  },
+  self_topic_comment: {
+    id: 'self_topic_comment',
+    defaultMessage: 'Notes, messages, links, files saved for posterity',
+    description: 'Comment for self topic for UI',
+  },
 });
 
 class InfoView extends React.Component {
@@ -97,6 +113,7 @@ class InfoView extends React.Component {
       muted: false,
       address: null,
       groupTopic: undefined,
+      isSelf: false,
       channel: undefined,
       fullName: undefined,
       description: undefined,
@@ -127,8 +144,8 @@ class InfoView extends React.Component {
     this.handleUnarchive = this.handleUnarchive.bind(this);
     this.handlePermissionsChanged = this.handlePermissionsChanged.bind(this);
     this.handleLaunchPermissionsEditor = this.handleLaunchPermissionsEditor.bind(this);
-    this.handleCopyID = this.handleCopyID.bind(this);
     this.handleShowQRCode = this.handleShowQRCode.bind(this);
+    this.handleCopyToClipboard = this.handleCopyToClipboard.bind(this);
     this.handleShowAddMembers = this.handleShowAddMembers.bind(this);
     this.handleMemberUpdateRequest = this.handleMemberUpdateRequest.bind(this);
     this.handleMemberSelected = this.handleMemberSelected.bind(this);
@@ -205,6 +222,8 @@ class InfoView extends React.Component {
       }
     }
 
+    const isSelf = topic.isSelfType();
+
     this.setState({
       owner: acs && acs.isOwner(),
       admin: acs && acs.isAdmin(),
@@ -212,14 +231,19 @@ class InfoView extends React.Component {
       deleter: acs && acs.isDeleter(),
       muted: acs && acs.isMuted(),
 
-      fullName: clipStr(topic.public && topic.public.fn, MAX_TITLE_LENGTH),
-      description: clipStr(topic.public && topic.public.note, MAX_TOPIC_DESCRIPTION_LENGTH),
+      fullName: isSelf ?
+        props.intl.formatMessage(messages.self_topic_name) :
+        clipStr(topic.public && topic.public.fn, MAX_TITLE_LENGTH),
+      description: isSelf ?
+        props.intl.formatMessage(messages.self_topic_comment) :
+        clipStr(topic.public && topic.public.note, MAX_TOPIC_DESCRIPTION_LENGTH),
       avatar: makeImageUrl(topic.public ? topic.public.photo : null),
       trustedBadges: badges,
       private: clipStr(topic.private && topic.private.comment, MAX_TITLE_LENGTH),
       archived: topic.isArchived(),
       address: topic.name,
       groupTopic: topic.isGroupType(),
+      isSelf: isSelf,
       channel: topic.isChannelType() || topic.chan,
       access: acs ? acs.getMode() : undefined,
       modeGiven: acs ? acs.getGiven() : undefined,
@@ -379,14 +403,18 @@ class InfoView extends React.Component {
     this.props.onNavigate(`perm/${which}`);
   }
 
-  handleCopyID(e) {
-    e.preventDefault();
-    navigator.clipboard.writeText(this.state.address);
-  }
-
   handleShowQRCode(e) {
     e.preventDefault();
     this.props.onNavigate('qrcode');
+  }
+
+  handleCopyToClipboard(e, text) {
+    e.preventDefault();
+    navigator.clipboard.writeText(text).then(_ => {
+      this.setState({toast: this.props.intl.formatMessage(messages.text_copied)});
+      setTimeout(_ => { this.setState({toast: ''}); }, TOAST_DURATION);
+    });
+
   }
 
   handleShowAddMembers(e) {
@@ -466,8 +494,12 @@ class InfoView extends React.Component {
     const panelTitle = formatMessage((view == 'perm' ? messages['perm_' + args[0]] : messages[view])
       || messages['info']);
 
+    const topic = this.props.tinode.getTopic(this.state.topic);
+    const alias = topic && topic.alias();
+
     return (
       <div id="info-view">
+        <div className={`toast${this.state.toast ? ' show' : ''}`}>{this.state.toast}</div>
         <div className="caption-panel" id="info-caption-panel">
           <div className="panel-title" id="info-title">{panelTitle}</div>
           <div>
@@ -547,15 +579,18 @@ class InfoView extends React.Component {
           :
         view == 'qrcode' ?
           <ShowQRCode
-            uri={Tinode.URI_TOPIC_ID_PREFIX + this.state.address}
+            uri={Tinode.URI_TOPIC_ID_PREFIX + this.props.topic}
             onCancel={this.handleBackNavigate} />
           :
           <div id="info-view-content" className="scrollable-panel">
             <div className="panel-form-column">
-              <a href="#" className="flat-button float-right" onClick={(e) => {e.preventDefault(); this.props.onNavigate('general');}}>
-                <i className="material-icons">edit</i>&nbsp;
-                <FormattedMessage id="button_edit" defaultMessage="Edit" description="Call to action [Edit]" />
-              </a>
+              {!this.state.isSelf ?
+                <a href="#" className="flat-button float-right" onClick={e => {e.preventDefault(); this.props.onNavigate('general');}}>
+                  <i className="material-icons">edit</i>&nbsp;
+                  <FormattedMessage id="button_edit" defaultMessage="Edit" description="Call to action [Edit]" />
+                </a>
+                : null
+              }
               <center>
                 <AvatarUpload
                   tinode={this.props.tinode}
@@ -582,24 +617,47 @@ class InfoView extends React.Component {
                 </div>
                 : null
               }
-              <div className="panel-form-row">
-                <div>
-                  <label className="small"><FormattedMessage id="label_user_id" defaultMessage="ID:"
-                    description="Label for user address (ID)" /></label>&nbsp;
-                  <tt>{this.state.address}</tt>
+              {!this.state.isSelf ?
+                <>
+                <div className="panel-form-row">
+                  <div>
+                    <label className="small"><FormattedMessage id="label_user_id" defaultMessage="ID:"
+                      description="Label for user address (ID)" /></label>&nbsp;
+                    <tt>{this.state.address}</tt>
+                  </div>
+                  <div style={{marginLeft: 'auto'}}>
+                    &nbsp;<a href="#" onClick={e => {this.handleCopyToClipboard(e, this.state.address);}}>
+                      <i className="material-icons">content_copy</i>
+                    </a>&nbsp;
+                    &nbsp;<a href="#" onClick={this.handleShowQRCode}>
+                      <i className="material-icons">qr_code</i>
+                    </a>&nbsp;
+                  </div>
                 </div>
-                <div style={{marginLeft: 'auto'}}>
-                  &nbsp;<a href="#" onClick={this.handleCopyID}>
-                    <i className="material-icons">content_copy</i>
-                  </a>&nbsp;
-                  &nbsp;<a href="#" onClick={this.handleShowQRCode}>
-                    <i className="material-icons">qr_code</i>
-                  </a>&nbsp;
+                {alias ?
+                  <div className="panel-form-row">
+                    <div>
+                      <label className="small"><FormattedMessage id="label_alias" defaultMessage="Alias:"
+                        description="Label for user or topic alias" /></label>&nbsp;
+                      <tt>{alias}</tt>
+                    </div>
+                    <div style={{marginLeft: 'auto'}}>
+                      &nbsp;<a href="#" onClick={e => {this.handleCopyToClipboard(e, alias);}}>
+                        <i className="material-icons">content_copy</i>
+                      </a>&nbsp;
+                      &nbsp;<i className="material-icons" style={{opacity: 0}}>qr_code</i>&nbsp;
+                    </div>
+                  </div>
+                : null}
+                </>
+                : null
+              }
+              {this.state.trustedBadges.length > 0 ?
+                <div className="group">
+                  <BadgeList trustedBadges={this.state.trustedBadges} />
                 </div>
-              </div>
-              <div className="group">
-                <BadgeList trustedBadges={this.state.trustedBadges} />
-              </div>
+                : null
+              }
               {this.state.description ?
                 <div className="group">
                   <label className="small">
@@ -609,14 +667,17 @@ class InfoView extends React.Component {
                   <div>{this.state.description}</div>
                 </div> : null}
             </div>
-            <div className="hr" />
-            <div className="panel-form-row">
-              <label>
-                <FormattedMessage id="label_muting_topic" defaultMessage="Muted:"
-                  description="Label for Muting/unmuting the topic" />
-              </label>
-              <CheckBox name="P" checked={this.state.muted} onChange={this.handleMuted} />
-            </div>
+            {!this.state.isSelf ?
+              <><div className="hr" />
+              <div className="panel-form-row">
+                <label>
+                  <FormattedMessage id="label_muting_topic" defaultMessage="Muted:"
+                    description="Label for Muting/unmuting the topic" />
+                </label>
+                <CheckBox name="P" checked={this.state.muted} onChange={this.handleMuted} />
+              </div></>
+              : null
+            }
             {this.state.archived ?
               <div className="panel-form-row">
                 <label>
@@ -628,13 +689,16 @@ class InfoView extends React.Component {
               :
               null
             }
-            <div className="hr" />
-            <div className="panel-form-row">
-              <a href="#" className="flat-button" onClick={(e) => {e.preventDefault(); this.props.onNavigate('security');}}>
-                <i className="material-icons">security</i>&nbsp;<FormattedMessage id="button_security"
-                  defaultMessage="Security" description="Navigaton button for security panel." />
-              </a>
-            </div>
+            {!this.state.isSelf ?
+              <><div className="hr" />
+              <div className="panel-form-row">
+                <a href="#" className="flat-button" onClick={(e) => {e.preventDefault(); this.props.onNavigate('security');}}>
+                  <i className="material-icons">security</i>&nbsp;<FormattedMessage id="button_security"
+                    defaultMessage="Security" description="Navigaton button for security panel." />
+                </a>
+              </div></>
+              : null
+            }
             {this.state.groupTopic && this.state.sharer ?
               <>
                 <div className="hr" />
