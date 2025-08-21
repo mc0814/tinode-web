@@ -183,8 +183,8 @@ class TopicSecurity extends React.PureComponent {
                 ))}
               </select>
             </>
-            :
-            <a href="#" className="danger flat-button" onClick={this.handleLeave}>
+              :
+              <a href="#" className="danger flat-button" onClick={this.handleLeave}>
               <i className="material-icons">exit_to_app</i> &nbsp;{formatMessage(messages.leave_chat)}
             </a>
           }
@@ -206,8 +206,8 @@ class TopicSecurity extends React.PureComponent {
                 ))}
               </select>
             </>
-            :
-            null
+              :
+              null
           }
         </div>
         <div className="hr" />

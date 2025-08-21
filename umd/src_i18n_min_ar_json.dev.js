@@ -1,5 +1,5 @@
 "use strict";
-(self["webpackChunktinode_webapp"] = self["webpackChunktinode_webapp"] || []).push([["src_i18n_min_ar_json"],{
+(self["webpackChunkim"] = self["webpackChunkim"] || []).push([["src_i18n_min_ar_json"],{
 
 /***/ "./src/i18n.min/ar.json":
 /*!******************************!*\

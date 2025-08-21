@@ -199,6 +199,7 @@ export function blobToBase64(blob) {
 // File pasted from the clipboard. It's either an inline image or a file attachment.
 export function filePasted(event, onImageSuccess, onAttachmentSuccess, onError) {
   const items = (event.clipboardData || event.originalEvent.clipboardData || {}).items;
+  console.log('paste', items);
   if (!items || !items.length) {
     return false;
   }
@@ -213,14 +214,17 @@ export function filePasted(event, onImageSuccess, onAttachmentSuccess, onError) 
         continue;
       }
       if (file.type && file.type.split('/')[0] == 'image') {
+        console.log('paste', 'image', file);
         onImageSuccess(file);
       } else {
+        console.log('paste', 'file', file);
         onAttachmentSuccess(file);
       }
       // Indicate that the pasted data contains a file.
       return true;
     }
   }
+  console.log('paste', 'no file');
   // No file found.
   return false;
 }

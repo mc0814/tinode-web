@@ -622,6 +622,7 @@ class MessagesView extends React.Component {
 
   /* Mount drag and drop events */
   mountDnDEvents(dnd) {
+    console.log('drop', dnd);
     if (dnd) {
       dnd.addEventListener('dragstart', this.handleDragStart);
       dnd.addEventListener('dragenter', this.handleDragIn);
@@ -629,6 +630,7 @@ class MessagesView extends React.Component {
       dnd.addEventListener('dragover', this.handleDrag);
       dnd.addEventListener('drop', this.handleDrop);
       this.dndRef = dnd;
+      console.log('drop', 'success');
     }
   }
 
@@ -1048,7 +1050,7 @@ class MessagesView extends React.Component {
   // handleAttachFile method is called when [Attach file] button is clicked: launch attachment preview.
   handleAttachFile(file) {
     const maxExternAttachmentSize = this.props.tinode.getServerParam('maxFileUploadSize', MAX_EXTERN_ATTACHMENT_SIZE);
-
+    console.log('drop', 'in handleAttachFile', file);
     if (file.size > maxExternAttachmentSize) {
       // Too large.
       this.props.onError(this.props.intl.formatMessage(messages.file_attachment_too_large,
@@ -1229,7 +1231,7 @@ class MessagesView extends React.Component {
   // handleAttachImageOrVideo method is called when [Attach image or video] button is clicked: launch image or video preview.
   handleAttachImageOrVideo(file) {
     const maxExternAttachmentSize = this.props.tinode.getServerParam('maxFileUploadSize', MAX_EXTERN_ATTACHMENT_SIZE);
-
+    console.log('drop', 'in handleAttachImageOrVideo', file);
     if (file.type.startsWith('video/')) {
       this.setState({videoPreview: {
         url: URL.createObjectURL(file),
@@ -1260,13 +1262,16 @@ class MessagesView extends React.Component {
 
   // handleFileDrop is called when the user drags & drops a file upon the message view.
   handleFileDrop(files) {
+    console.log('drop', 'in handleFileDrop', files);
     if (!files || files.length == 0) {
       return;
     }
     const file = files[0];
     if (file.type && file.type.startsWith('image/')) {
+      console.log('drop', 'handleAttachImageOrVideo', files);
       this.handleAttachImageOrVideo(file);
     } else {
+      console.log('drop', 'handleAttachFile', files);
       this.handleAttachFile(file);
     }
   }
@@ -1434,13 +1439,18 @@ class MessagesView extends React.Component {
   }
 
   handleDrop(e) {
+    console.log('drop', 'handleDrop start');
     e.preventDefault();
     e.stopPropagation();
     this.setState({dragging: false});
+    console.log('drop', this.isDragEnabled());
+    console.log('drop', e.dataTransfer.files);
+    console.log('drop', e.dataTransfer.files.length);
     if (this.isDragEnabled() && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       this.handleFileDrop(e.dataTransfer.files);
       this.dragCounter = 0;
     }
+    console.log('drop', 'handleDrop end');
   }
 
   render() {

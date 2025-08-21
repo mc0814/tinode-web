@@ -1738,5 +1738,26 @@
     "description": "Menu item [Unpin] for un-pinning the message.",
     "missing": false,
     "obsolete": false
+  },
+  "button_delete_all_message": {
+    "translation": "",
+    "defaultMessage": "Delete all message",
+    "description": "Button [Delete all message]",
+    "missing": true,
+    "obsolete": false
+  },
+  "delete_all_message": {
+    "translation": "",
+    "defaultMessage": "Delete all message",
+    "description": "Title for delete all message warning",
+    "missing": true,
+    "obsolete": false
+  },
+  "delete_all_message_warning": {
+    "translation": "",
+    "defaultMessage": "Are you sure you want to delete your all message? It cannot be undone.",
+    "description": "Warning message when deleting all message",
+    "missing": true,
+    "obsolete": false
   }
 }

@@ -33,25 +33,26 @@ class ContactList extends React.Component {
 
     // Count of contacts, excluding action items.
     let contactsCount = 0;
-    if (this.props.showSelfTopic) {
-      const selected = showCheckmark ?
-        (this.props.topicSelected.indexOf('slf') > -1) :
-        (this.props.topicSelected === 'slf');
-      contactNodes.push(
-        <Contact
-          tinode={this.props.tinode}
-          avatar={true}
-          showMode={this.props.showMode}
-          selected={selected}
-          showCheckmark={showCheckmark}
-          onSelected={this.props.onTopicSelected}
-          showContextMenu={this.props.showContextMenu}
-          index={contactNodes.length}
-          item='slf'
-          key='slf' />
-      );
-      contactsCount ++;
-    }
+    // do not show self topic
+    // if (this.props.showSelfTopic) {
+    //   const selected = showCheckmark ?
+    //     (this.props.topicSelected.indexOf('slf') > -1) :
+    //     (this.props.topicSelected === 'slf');
+    //   contactNodes.push(
+    //     <Contact
+    //       tinode={this.props.tinode}
+    //       avatar={true}
+    //       showMode={this.props.showMode}
+    //       selected={selected}
+    //       showCheckmark={showCheckmark}
+    //       onSelected={this.props.onTopicSelected}
+    //       showContextMenu={this.props.showContextMenu}
+    //       index={contactNodes.length}
+    //       item='slf'
+    //       key='slf' />
+    //   );
+    //   contactsCount ++;
+    // }
     if (this.props.contacts && this.props.contacts.length > 0) {
       this.props.contacts.forEach(c => {
         if (c.action) {

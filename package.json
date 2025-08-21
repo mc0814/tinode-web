@@ -1,7 +1,7 @@
 {
   "name": "im",
   "description": "IM messenger for the web",
-  "version": "0.22.12",
+  "version": "0.24.3",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/tinode/webapp.git"

@@ -1668,5 +1668,96 @@
     "description": "Warning message when deleting all message",
     "missing": false,
     "obsolete": false
+  },
+  "alias_already_taken": {
+    "translation": "(already taken)",
+    "defaultMessage": "(already taken)",
+    "description": "Error message for alias already taken",
+    "missing": false,
+    "obsolete": false
+  },
+  "alias_editing_placeholder": {
+    "translation": "Alias (optional)",
+    "defaultMessage": "Alias (optional)",
+    "description": "Placeholder for editing user or topic alias",
+    "missing": false,
+    "obsolete": false
+  },
+  "alias_invalid": {
+    "translation": "(invalid)",
+    "defaultMessage": "(invalid)",
+    "description": "Error message for invalid alias",
+    "missing": false,
+    "obsolete": false
+  },
+  "label_alias": {
+    "translation": "Alias:",
+    "defaultMessage": "Alias:",
+    "description": "Label for user or topic alias",
+    "missing": false,
+    "obsolete": false
+  },
+  "label_alias_edit": {
+    "translation": "Alias",
+    "defaultMessage": "Alias",
+    "description": "Label for editing user or topic alias",
+    "missing": false,
+    "obsolete": false
+  },
+  "message_deleted": {
+    "translation": "message deleted",
+    "defaultMessage": "message deleted",
+    "description": "Pinned message is deleted",
+    "missing": false,
+    "obsolete": false
+  },
+  "message_not_found": {
+    "translation": "message not found",
+    "defaultMessage": "message not found",
+    "description": "Pinned message is not found",
+    "missing": false,
+    "obsolete": false
+  },
+  "pin_message": {
+    "translation": "Pin",
+    "defaultMessage": "Pin",
+    "description": "Menu item [Pin] for pinning message to the top.",
+    "missing": false,
+    "obsolete": false
+  },
+  "select_country": {
+    "translation": "Select country",
+    "defaultMessage": "Select country",
+    "description": "Placeholder for the country selector",
+    "missing": false,
+    "obsolete": false
+  },
+  "self_topic_comment": {
+    "translation": "Notes, messages, links, files saved for posterity",
+    "defaultMessage": "Notes, messages, links, files saved for posterity",
+    "description": "Comment for self topic for UI",
+    "missing": false,
+    "obsolete": false
+  },
+  "self_topic_name": {
+    "translation": "Saved messages",
+    "defaultMessage": "Saved messages",
+    "description": "Name of self topic for UI",
+    "missing": false,
+    "obsolete": false
+  },
+  "text_copied": {
+    "translation": "Copied to clipboard",
+    "defaultMessage": "Copied to clipboard",
+    "description": "Notification that text has been copied to clipboard",
+    "missing": false,
+    "obsolete": false
+  },
+  "unpin_message": {
+    "translation": "Unpin",
+    "defaultMessage": "Unpin",
+    "description": "Menu item [Unpin] for un-pinning the message.",
+    "missing": false,
+    "obsolete": false
   }
 }

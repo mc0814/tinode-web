@@ -88,8 +88,11 @@ class SendMessage extends React.PureComponent {
   }
 
   componentDidMount() {
+    console.log('paste', this.messageEditArea);
     if (this.messageEditArea) {
+      console.log('paste', this.handlePasteEvent);
       this.messageEditArea.addEventListener('paste', this.handlePasteEvent, false);
+      console.log('paste', 'success');
       if (window.getComputedStyle(this.messageEditArea).getPropertyValue('transition-property') == 'all') {
         // Set focus on desktop, but not on mobile: focus causes soft keyboard to pop up.
         this.messageEditArea.focus();
@@ -141,15 +144,18 @@ class SendMessage extends React.PureComponent {
   }
 
   handlePasteEvent(e) {
+    console.log('paste', this.props.disabled);
     if (this.props.disabled) {
       return;
     }
+    console.log('paste', 'no disabled');
     // FIXME: handle large files too.
     if (filePasted(e,
       file => { this.props.onAttachImage(file); },
       file => { this.props.onAttachFile(file); },
       this.props.onError)) {
 
+      console.log('paste', e);
       // If a file was pasted, don't paste base64 data into input field.
       e.preventDefault();
     }
